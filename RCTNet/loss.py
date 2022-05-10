@@ -9,8 +9,8 @@ class Loss():
     of two terms: the absolute error between the predicted and ground truth high quality
     image (L1 loss), and their difference in an embedding space, namely the sum of the L1
     losses of the embedded representations of the predicted and ground truth high quality
-    image. The embedded representations used are the outputs of the 2, 4, 6 classification
-    layers in VGG-16 by Simonyan et al. (2015), which is pre-trained on the ImageNet dataset.
+    image. The embedded representations used are the outputs of the 2nd, 4th, 6th layer in
+    VGG-16 by Simonyan et al. (2015), which is pre-trained on the ImageNet dataset.
     """
 
     def __init__(self):
@@ -24,7 +24,7 @@ class Loss():
     def estimate_vgg_loss(self, Y: torch.Tensor, target_img: torch.Tensor) -> torch.Tensor:
         """vgg16 loss function estimation.
 
-            This function calculates the output of the vgg16 loss function.
+            This function calculates the vgg16 loss.
 
             Args:
                 - Y (torch.Tensor) : the enhanced output image Y of the RCTNet.
@@ -70,7 +70,7 @@ class Loss():
     def estimate_loss(self, Y: torch.Tensor, target_img: torch.Tensor, balance_lambda: float) -> torch.Tensor:
         """loss function estimation.
 
-            This function calculates the output of the loss function.
+            This function calculates the final loss.
 
             Args:
                 - Y (torch.Tensor) : the enhanced output image Y of the RCTNet.
@@ -86,10 +86,6 @@ class Loss():
         # Calculate error in the embedding space of the k-th layer in VGG-16
         vgg = self.estimate_vgg_loss(Y, target_img)
         # Balance two terms with hyper parameter balance_lambda
-        print("-----------------------------------")
-        print("L1 loss: {}".format(l1))
-        print("VGG loss: {}".format(vgg))
-        print("-----------------------------------")
         loss = l1 + balance_lambda * vgg
         
         return loss
