@@ -48,7 +48,7 @@ class Encoder(nn.Module):
     """Encoder network as described in Kim et al. (2021).
 
     Args:
-        - input_dim (int) : input channel dimension
+        - input_dim (int) : input channel dimension (Default: 3)
         - hidden_dims (List) : dimensions of the hidden layers
                                (Default: [16, 32, 64, 128, 256, 1024])
 
@@ -59,7 +59,7 @@ class Encoder(nn.Module):
     """
 
     def __init__(
-            self, input_dim: int,
+            self, input_dim: int = 3,
             hidden_dims: List[int] = [16, 32, 64, 128, 256, 1024]) -> None:
         super(Encoder, self).__init__()
 
@@ -135,7 +135,7 @@ class FeatureFusion(nn.Module):
         # Convolutions for the initial single input nodes
         self.l1_out = convBnSwish(
             in_channels=input_filters[3],
-            out_channels=n_filters, kernel_size=1, stride=1, padding=0)
+            out_channels=n_filters, stride=1, padding=1)
         self.l1_h5 = convBnSwish(
             in_channels=input_filters[2],
             out_channels=n_filters, stride=1, padding=1)
@@ -232,3 +232,116 @@ class FeatureFusion(nn.Module):
         )
 
         return [l3_h3, l3_h4, l3_h5, l3_out]
+
+
+class GlobalRCT(nn.Module):
+    """Global RCT as described in Kim et al. (2021).
+
+    This class implements the Global Representative Color Transform as 
+    described in Kim et al. (2021). 
+
+    In particular, given a feature representation Z_G at the coarest-scale in 
+    the feature fusion module, we extract representative features R_G and
+    transformed colors T_G using two different conv-bn-swish-conv blocks. In
+    addition, we extract image features F from the input image using yet 
+    another conv-bn-swish-conv block. The enhanced image Y_G is then computed
+    using the following formula:
+
+            Y = A \cdot T_G^T
+
+    where A is the attention matrix computed as follows:
+
+            A = softmax(\\frac{F_r \cdot R_G}{\sqrt{C}})
+
+    where F_r is the reshaped tensor of F and C is the feature dimension for
+    the representative features of the GlobalRCT (`c`).
+
+
+    Args:
+        - input_dim (int) : input channel dimension (Default: 3)
+        - c_prime (int) : coarest scale of features (Default: 128)
+        - c (int) : feature dimension for the representative 
+                    features of the GlobalRCT (Default: 16)
+        - n (int) : number of representative colors (Default: 64)
+
+    Forward: 
+        The output of the forward pass is a Tensor of the enhanced images Y_G.
+    """
+
+    def __init__(self,
+                 input_dim: int = 3,
+                 c_prime: int = 128,
+                 c: int = 16,
+                 n: int = 64
+                 ) -> None:
+        super(GlobalRCT, self).__init__()
+
+        self.c = c
+        self.n = n
+
+        # conv-bn-swish-conv block for the representative features
+        self.convR_G = nn.Sequential(
+            convBnSwish(in_channels=c_prime,
+                        out_channels=c*n // 2,
+                        stride=1,
+                        padding=1),
+            nn.Conv2d(
+                in_channels=c*n // 2,
+                out_channels=c*n,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+        )
+
+        # conv-bn-swish-conv block for the transformed colors
+        self.convT_G = nn.Sequential(
+            convBnSwish(in_channels=c_prime,
+                        out_channels=3*n // 2,
+                        stride=1,
+                        padding=1),
+            nn.Conv2d(
+                in_channels=3*n // 2,
+                out_channels=3*n,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+        )
+
+        # conv-bn-swish-conv block for the image features
+        self.convF = nn.Sequential(
+            convBnSwish(in_channels=input_dim,
+                        out_channels=c // 2,
+                        stride=1,
+                        padding=1),
+            nn.Conv2d(
+                in_channels=c // 2,
+                out_channels=c,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+        )
+
+    def forward(self,
+                x: torch.Tensor,
+                features: torch.Tensor) -> torch.Tensor:
+        batch_size, _, h, w = x.shape
+
+        f = self.convF(x)  # self.c x h x w
+        f_r = f.reshape(batch_size, self.c, h*w)
+        f_r = f_r.transpose(1, 2)
+
+        r_G = self.convR_G(features)  # self.c*self.n x 1 x 1
+        r_G = r_G.reshape(batch_size, self.c, self.n)
+
+        # hw x self.n
+        attention = F.softmax(torch.bmm(f_r, r_G) / self.c**0.5, dim=1)
+
+        t_G = self.convT_G(features)  # 3*self.n x 1 x 1
+        t_G = t_G.reshape(batch_size, 3, self.n)
+
+        y_G = torch.bmm(attention, t_G.transpose(1, 2))  # h*w x 3
+
+        return y_G.transpose(1, 2).reshape(batch_size, 3, h, w)
