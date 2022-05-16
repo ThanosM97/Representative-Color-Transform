@@ -203,15 +203,15 @@ class FeatureFusion(nn.Module):
 
         # Top to bottom calculations
         l2_h5 = self.l2_h5(
-            l2_w[0, 0] * F.interpolate(l1_out, scale_factor=8)
+            l2_w[0, 0] * F.interpolate(l1_out, size=l1_h5.shape[-1])
             + l2_w[0, 1] * l1_h5
         )
         l2_h4 = self.l2_h4(
-            l2_w[1, 0] * F.interpolate(l2_h5, scale_factor=2)
+            l2_w[1, 0] * F.interpolate(l2_h5, size=l1_h4.shape[-1])
             + l2_w[1, 1] * l1_h4
         )
         l3_h3 = self.l3_h3(
-            l3_w1[1, 0] * F.interpolate(l2_h4, scale_factor=2)
+            l3_w1[1, 0] * F.interpolate(l2_h4, size=l1_h3.shape[-1])
             + l3_w1[1, 1] * l1_h3
         )
 
@@ -219,16 +219,16 @@ class FeatureFusion(nn.Module):
         l3_h4 = self.l3_h4(
             l3_w2[1, 0] * l2_h4
             + l3_w2[1, 1] * l1_h4
-            + l3_w2[1, 2] * F.interpolate(l3_h3, scale_factor=0.5)
+            + l3_w2[1, 2] * F.interpolate(l3_h3, size=l1_h4.shape[-1])
         )
         l3_h5 = self.l3_h5(
             l3_w2[0, 0] * l2_h5
             + l3_w2[0, 1] * l1_h5
-            + l3_w2[0, 2] * F.interpolate(l3_h4, scale_factor=0.5)
+            + l3_w2[0, 2] * F.interpolate(l3_h4, size=l1_h5.shape[-1])
         )
         l3_out = self.l3_out(
             l3_w1[0, 0] * l1_out
-            + l3_w1[0, 1] * F.interpolate(l3_h5, scale_factor=0.125)
+            + l3_w1[0, 1] * F.interpolate(l3_h5, size=l1_out.shape[-1])
         )
 
         return [l3_h3, l3_h4, l3_h5, l3_out]
