@@ -1,6 +1,5 @@
 """This module implements the RCTNet model used in Kim et al. (2021)
  https://ieeexplore.ieee.org/document/9710400"""
-from typing import List
 
 import torch
 import torch.nn.functional as F
@@ -48,8 +47,8 @@ class Encoder(nn.Module):
     """Encoder network as described in Kim et al. (2021).
 
     Args:
-        - input_dim (int) : input channel dimension (Default: 3)
-        - hidden_dims (List) : dimensions of the hidden layers
+        - in_channels (int) : Number of channels in input (Default: 3)
+        - hidden_dims (list) : dimensions of the hidden layers
                                (Default: [16, 32, 64, 128, 256, 1024])
 
     Forward: 
@@ -59,13 +58,13 @@ class Encoder(nn.Module):
     """
 
     def __init__(
-            self, input_dim: int = 3,
-            hidden_dims: List[int] = [16, 32, 64, 128, 256, 1024]) -> None:
+            self, in_channels: int = 3,
+            hidden_dims: list[int] = [16, 32, 64, 128, 256, 1024]) -> None:
         super(Encoder, self).__init__()
 
         self.initial_blocks = nn.Sequential(
-            # IN: input_dimx256x256 / OUT: hidden_dims[0]x128x128
-            convBnSwish(input_dim, hidden_dims[0]),
+            # IN: in_channelsx256x256 / OUT: hidden_dims[0]x128x128
+            convBnSwish(in_channels, hidden_dims[0]),
 
             # IN: hidden_dims[0]x128x128 / OUT: hidden_dims[1]x64x64
             convBnSwish(hidden_dims[0], hidden_dims[1])
@@ -86,7 +85,10 @@ class Encoder(nn.Module):
             nn.AdaptiveAvgPool2d(1)
         )
 
-    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
+        # Resize image to 256x256
+        x = F.interpolate(x, size=256)
+
         h2 = self.initial_blocks(x)
         h3 = self.b3(h2)
         h4 = self.b4(h3)
@@ -114,7 +116,7 @@ class FeatureFusion(nn.Module):
     Args:
         - n_filters (int) : number of filters for the convolutions of the 
                             feature fusion module (Default: 128)
-        - input_filters (List) : number of channels of the hidden layers
+        - input_filters (list) : number of channels of the hidden layers
                                  (Default: [64, 128, 256, 1024])
         - epsilon (float) : epsilon value used in the fusion formula
                             (Default: 0.0001)
@@ -126,7 +128,7 @@ class FeatureFusion(nn.Module):
 
     def __init__(self,
                  n_filters: int = 128,
-                 input_filters: List[int] = [64, 128, 256, 1024],
+                 input_filters: list[int] = [64, 128, 256, 1024],
                  epsilon: float = 1e-4) -> None:
         super(FeatureFusion, self).__init__()
         self.input_filters = input_filters
@@ -170,7 +172,7 @@ class FeatureFusion(nn.Module):
         self.l3_w2 = nn.parameter.Parameter(
             torch.ones((2, 3), dtype=torch.float32))
 
-    def forward(self, features: List[torch.Tensor]) -> List[torch.Tensor]:
+    def forward(self, features: list[torch.Tensor]) -> list[torch.Tensor]:
         h3, h4, h5, out = features
 
         assert h3.shape[1] == self.input_filters[0], \
@@ -258,36 +260,36 @@ class GlobalRCT(nn.Module):
 
 
     Args:
-        - input_dim (int) : input channel dimension (Default: 3)
+        - in_channels (int) : Number of channels in input (Default: 3)
         - c_prime (int) : coarest scale of features (Default: 128)
         - c (int) : feature dimension for the representative 
                     features of the GlobalRCT (Default: 16)
-        - n (int) : number of representative colors (Default: 64)
+        - n_G (int) : number of representative colors (Default: 64)
 
     Forward: 
         The output of the forward pass is a Tensor of the enhanced images Y_G.
     """
 
     def __init__(self,
-                 input_dim: int = 3,
+                 in_channels: int = 3,
                  c_prime: int = 128,
                  c: int = 16,
-                 n: int = 64
+                 n_G: int = 64
                  ) -> None:
         super(GlobalRCT, self).__init__()
 
         self.c = c
-        self.n = n
+        self.n_G = n_G
 
         # conv-bn-swish-conv block for the representative features
         self.convR_G = nn.Sequential(
             convBnSwish(in_channels=c_prime,
-                        out_channels=c*n // 2,
+                        out_channels=c_prime,
                         stride=1,
                         padding=1),
             nn.Conv2d(
-                in_channels=c*n // 2,
-                out_channels=c*n,
+                in_channels=c_prime,
+                out_channels=c*n_G,
                 kernel_size=3,
                 stride=1,
                 padding=1
@@ -297,12 +299,12 @@ class GlobalRCT(nn.Module):
         # conv-bn-swish-conv block for the transformed colors
         self.convT_G = nn.Sequential(
             convBnSwish(in_channels=c_prime,
-                        out_channels=3*n // 2,
+                        out_channels=c_prime,
                         stride=1,
                         padding=1),
             nn.Conv2d(
-                in_channels=3*n // 2,
-                out_channels=3*n,
+                in_channels=c_prime,
+                out_channels=3*n_G,
                 kernel_size=3,
                 stride=1,
                 padding=1
@@ -311,12 +313,12 @@ class GlobalRCT(nn.Module):
 
         # conv-bn-swish-conv block for the image features
         self.convF = nn.Sequential(
-            convBnSwish(in_channels=input_dim,
-                        out_channels=c // 2,
+            convBnSwish(in_channels=in_channels,
+                        out_channels=in_channels,
                         stride=1,
                         padding=1),
             nn.Conv2d(
-                in_channels=c // 2,
+                in_channels=in_channels,
                 out_channels=c,
                 kernel_size=3,
                 stride=1,
@@ -329,18 +331,22 @@ class GlobalRCT(nn.Module):
                 features: torch.Tensor) -> torch.Tensor:
         batch_size, _, h, w = x.shape
 
+        # Get image features F
         f = self.convF(x)  # self.c x h x w
         f_r = f.reshape(batch_size, self.c, h*w)
         f_r = f_r.transpose(1, 2)
 
-        r_G = self.convR_G(features)  # self.c*self.n x 1 x 1
-        r_G = r_G.reshape(batch_size, self.c, self.n)
+        # Get Global Representative features R_G
+        r_G = self.convR_G(features)  # self.c*self.n_G x 1 x 1
+        r_G = r_G.reshape(batch_size, self.c, self.n_G)
 
+        # Get the attention matrix A
         # hw x self.n
         attention = F.softmax(torch.bmm(f_r, r_G) / self.c**0.5, dim=1)
 
-        t_G = self.convT_G(features)  # 3*self.n x 1 x 1
-        t_G = t_G.reshape(batch_size, 3, self.n)
+        #  Get Global Transformed Colors T_G
+        t_G = self.convT_G(features)  # 3*self.n_G x 1 x 1
+        t_G = t_G.reshape(batch_size, 3, self.n_G)
 
         y_G = torch.bmm(attention, t_G.transpose(1, 2))  # h*w x 3
 
