@@ -5,6 +5,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from .utils import padding, remove_padding
+
 
 def convBnSwish(
         in_channels: int,
@@ -351,3 +353,193 @@ class GlobalRCT(nn.Module):
         y_G = torch.bmm(attention, t_G.transpose(1, 2))  # h*w x 3
 
         return y_G.transpose(1, 2).reshape(batch_size, 3, h, w)
+
+
+class LocalRCT(nn.Module):
+    """Local RCT as described in Kim et al. (2021).
+
+    This class implements the Local Representative Color Transform as 
+    described in Kim et al. (2021). 
+
+    In particular, given a feature representation Z_L at the finest-scale in 
+    the feature fusion module, we extract representative features R_L and
+    transformed colors T_L using two different conv-bn-swish-conv blocks. In
+    addition, we extract image features F from the input image using yet 
+    another conv-bn-swish-conv block. Subsequently, a `grid_size` uniform
+    meshgrid is set on the input image and each generated grid B_k has four
+    corner points (32x32 in total), which correspond to four representative
+    features and transformed colors obtained from their spatial sizes at the
+    corresponding positions.
+
+    Then for each of those girds B_k, we apply the same formulaτions as in 
+    Global Representative Color Transform. Specifically, the enhanced image 
+    Y_L_k of B_k is computed using the following formula:
+
+            Y_L_k = A_k \cdot T_L_k^T
+
+    where A_k is the attention matrix computed as follows:
+
+            A_k = softmax(\\frac{F_k \cdot R_L_k}{\sqrt{C}})
+
+    where F_k is the grid feature map of F and C is the feature dimension for
+    the representative features of the LocalRCT (`c`).
+
+
+    Args:
+        - in_channels (int) : number of channels in input (Default: 3)
+        - grid_size (int) : size of mesh grid (Default: 31)
+        - c_prime (int) : coarest scale of features (Default: 128)
+        - c (int) : feature dimension for the representative 
+                    features of the GlobalRCT (Default: 16)
+        - n_L (int) : number of representative colors (Default: 16)
+
+    Forward: 
+        The output of the forward pass is a Tensor of the enhanced images Y_L.
+    """
+
+    def __init__(self,
+                 in_channels: int = 3,
+                 grid_size: int = 31,
+                 c_prime: int = 128,
+                 c: int = 16,
+                 n_L: int = 16
+                 ) -> None:
+        super(LocalRCT, self).__init__()
+
+        self.grid_size = grid_size
+        self.c = c
+        self.n_L = n_L
+
+        # conv-bn-swish-conv block for the representative features
+        self.convR_L = nn.Sequential(
+            convBnSwish(in_channels=c_prime,
+                        out_channels=c_prime,
+                        stride=1,
+                        padding=1),
+            nn.Conv2d(
+                in_channels=c_prime,
+                out_channels=c*n_L,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+        )
+
+        # conv-bn-swish-conv block for the transformed colors
+        self.convT_L = nn.Sequential(
+            convBnSwish(in_channels=c_prime,
+                        out_channels=c_prime,
+                        stride=1,
+                        padding=1),
+            nn.Conv2d(
+                in_channels=c_prime,
+                out_channels=3*n_L,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+        )
+
+        # conv-bn-swish-conv block for the image features
+        self.convF = nn.Sequential(
+            convBnSwish(in_channels=in_channels,
+                        out_channels=in_channels,
+                        stride=1,
+                        padding=1),
+            nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=c,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+        )
+
+    def forward(self,
+                x: torch.Tensor,
+                features: torch.Tensor) -> torch.Tensor:
+        batch_size, _, h, w = x.shape
+        spatial_size = features.shape[-1]
+
+        assert spatial_size == self.grid_size+1, \
+            ("The number of corner points derived by the grid_size, as "
+             "(grid_size + 1)x(grid_size + 1), should be the same as the "
+             "spatial size of the input features "
+             f"({spatial_size}x{spatial_size}).")
+
+        # Get image features F
+        f = self.convF(x)  # self.c x h x w
+
+        # Pad features for them to be divisible by grid_size
+        f, h_new, w_new, paddings = padding(f, self.grid_size)
+
+        # Size of the image feature patches Fk
+        w_patch = int(w_new / self.grid_size)
+        h_patch = int(h_new / self.grid_size)
+
+        # Get Local Representative Colors R_L
+        r_L = self.convR_L(features)  # self.c*self.n x spatial x spatial
+        r_L = r_L.reshape(
+            batch_size, self.c, self.n_L, spatial_size, spatial_size)
+        # spatial x spatial x self.c x n_L
+        r_L = r_L.permute(0, 3, 4, 1, 2)
+
+        # Get Local Transformed Colors T_L
+        t_L = self.convT_L(features)  # 3*self.n x spatial x spatial
+        t_L = t_L.reshape(batch_size, 3, self.n_L, spatial_size, spatial_size)
+        # spatial x spatial x channels x n_L
+        t_L = t_L.permute(0, 3, 4, 1, 2)
+
+        y_L = torch.zeros(batch_size, 3, h_new, w_new)
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
+                # Get grid feature F_k
+                f_k = f[:, :, i*h_patch:(i+1)*h_patch,
+                        j*w_patch:(j+1)*w_patch]  # self.c x H x W
+                f_k = f_k.reshape(batch_size, self.c, h_patch*w_patch)
+                f_k = f_k.transpose(1, 2)  # HW x self.c
+
+                # CP (Corner Point) 1
+                r_k_cp = r_L[:, i, j, :, :]  # self.c x self.n_L
+                t_k_cp = t_L[:, i, j, :, :]  # channels x n_L
+
+                r_k = r_k_cp  # self.c x self.n_L
+                t_k = t_k_cp  # channels x n_L
+
+                # CP 2
+                r_k_cp = r_L[:, i+1, j, :, :]
+                t_k_cp = t_L[:, i+1, j, :, :]
+
+                r_k = torch.cat((r_k, r_k_cp), dim=2)  # self.c x 2*self.n_L
+                t_k = torch.cat((t_k, t_k_cp), dim=2)  # channels x 2*n_L
+
+                # CP 3
+                r_k_cp = r_L[:, i, j+1, :, :]
+                t_k_cp = t_L[:, i, j+1, :, :]
+
+                r_k = torch.cat((r_k, r_k_cp), dim=2)  # self.c x 3*self.n_L
+                t_k = torch.cat((t_k, t_k_cp), dim=2)  # channels x 3*n_L
+
+                # CP 4
+                r_k_cp = r_L[:, i+1, j+1, :, :]
+                t_k_cp = t_L[:, i+1, j+1, :, :]
+
+                r_k = torch.cat((r_k, r_k_cp), dim=2)  # self.c x 4*self.n_L
+                t_k = torch.cat((t_k, t_k_cp), dim=2)  # channels x 4*n_L
+
+                # Get the attention matrix A
+                # HW x 4*self.n_L
+                attention = F.softmax(torch.bmm(f_k, r_k) / self.c**0.5, dim=1)
+
+                # Enhanced B_k
+                y_L_k = torch.bmm(attention, t_k.transpose(1, 2))  # HW x 3
+
+                # Add enhanced B_k grid to Y_L
+                y_L[:, :, i*h_patch:(i+1)*h_patch, j*w_patch:(j+1)
+                    * w_patch] = y_L_k.transpose(1, 2).reshape(
+                        batch_size, 3, h_patch, w_patch)
+
+        # Remove padding to return to input's size
+        y_L = remove_padding(y_L, paddings)
+
+        return y_L
