@@ -1,6 +1,5 @@
 """This module implements the RCTNet model used in Kim et al. (2021)
  https://ieeexplore.ieee.org/document/9710400"""
-
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -50,7 +49,7 @@ class Encoder(nn.Module):
 
     Args:
         - in_channels (int) : Number of channels in input (Default: 3)
-        - hidden_dims (list) : dimensions of the hidden layers
+        - hidden_dims (list) : Dimensions of filters in hidden layers
                                (Default: [16, 32, 64, 128, 256, 1024])
 
     Forward: 
@@ -62,6 +61,12 @@ class Encoder(nn.Module):
     def __init__(
             self, in_channels: int = 3,
             hidden_dims: list[int] = [16, 32, 64, 128, 256, 1024]) -> None:
+        """
+        Args:
+            - in_channels (int) : Number of channels in input (Default: 3)
+            - hidden_dims (list) : Dimensions of filters in hidden layers
+                            (Default: [16, 32, 64, 128, 256, 1024])
+        """
         super(Encoder, self).__init__()
 
         self.initial_blocks = nn.Sequential(
@@ -116,11 +121,11 @@ class FeatureFusion(nn.Module):
 
 
     Args:
-        - n_filters (int) : number of filters for the convolutions of the 
+        - n_filters (int) : Number of filters for the convolutions of the 
                             feature fusion module (Default: 128)
-        - input_filters (list) : number of channels of the hidden layers
+        - input_filters (list) : Number of channels of the hidden layers
                                  (Default: [64, 128, 256, 1024])
-        - epsilon (float) : epsilon value used in the fusion formula
+        - epsilon (float) : Epsilon value used in the fusion formula
                             (Default: 0.0001)
 
     Forward: 
@@ -132,6 +137,15 @@ class FeatureFusion(nn.Module):
                  n_filters: int = 128,
                  input_filters: list[int] = [64, 128, 256, 1024],
                  epsilon: float = 1e-4) -> None:
+        """
+        Args:
+            - n_filters (int) : Number of filters for the convolutions of the 
+                                feature fusion module (Default: 128)
+            - input_filters (list) : Number of channels of the hidden layers
+                                    (Default: [64, 128, 256, 1024])
+            - epsilon (float) : Epsilon value used in the fusion formula
+                                (Default: 0.0001)
+        """
         super(FeatureFusion, self).__init__()
         self.input_filters = input_filters
         self.epsilon = epsilon
@@ -263,10 +277,10 @@ class GlobalRCT(nn.Module):
 
     Args:
         - in_channels (int) : Number of channels in input (Default: 3)
-        - c_prime (int) : coarest scale of features (Default: 128)
-        - c (int) : feature dimension for the representative 
+        - c_prime (int) : Feature dimension (Default: 128)
+        - c (int) : Feature dimension for the representative 
                     features of the GlobalRCT (Default: 16)
-        - n_G (int) : number of representative colors (Default: 64)
+        - n_G (int) : Number of representative colors (Default: 64)
 
     Forward: 
         The output of the forward pass is a Tensor of the enhanced images Y_G.
@@ -278,6 +292,14 @@ class GlobalRCT(nn.Module):
                  c: int = 16,
                  n_G: int = 64
                  ) -> None:
+        """
+        Args:
+            - in_channels (int) : Number of channels in input (Default: 3)
+            - c_prime (int) : Feature dimension (Default: 128)
+            - c (int) : Feature dimension for the representative 
+                        features of the GlobalRCT (Default: 16)
+            - n_G (int) : Number of representative colors (Default: 64)
+        """
         super(GlobalRCT, self).__init__()
 
         self.c = c
@@ -386,12 +408,12 @@ class LocalRCT(nn.Module):
 
 
     Args:
-        - in_channels (int) : number of channels in input (Default: 3)
-        - grid_size (int) : size of mesh grid (Default: 31)
-        - c_prime (int) : coarest scale of features (Default: 128)
-        - c (int) : feature dimension for the representative 
-                    features of the GlobalRCT (Default: 16)
-        - n_L (int) : number of representative colors (Default: 16)
+        - in_channels (int) : Number of channels in input (Default: 3)
+        - grid_size (int) : Size of mesh grid (Default: 31)
+        - c_prime (int) : Feature dimension (Default: 128)
+        - c (int) : Feature dimension for the representative 
+                    features of the LocalRCT (Default: 16)
+        - n_L (int) : Number of representative colors (Default: 16)
 
     Forward: 
         The output of the forward pass is a Tensor of the enhanced images Y_L.
@@ -404,6 +426,15 @@ class LocalRCT(nn.Module):
                  c: int = 16,
                  n_L: int = 16
                  ) -> None:
+        """
+        Args:
+            - in_channels (int) : Number of channels in input (Default: 3)
+            - grid_size (int) : Size of mesh grid (Default: 31)
+            - c_prime (int) : Feature dimension (Default: 128)
+            - c (int) : Feature dimension for the representative 
+                        features of the LocalRCT (Default: 16)
+            - n_L (int) : Number of representative colors (Default: 16)
+        """
         super(LocalRCT, self).__init__()
 
         self.grid_size = grid_size
@@ -543,3 +574,116 @@ class LocalRCT(nn.Module):
         y_L = remove_padding(y_L, paddings)
 
         return y_L
+
+
+class RCTNet(nn.Module):
+    """RCTNet as described in Kim et al. (2021).
+
+    This class implements the Representative Color Transform Network as 
+    described in Kim et al. (2021). It utilizes the four modules: Encoder, 
+    Feature Fusion, GlobalRCT, and LocalRCT. Given an image X, RCTNet produces 
+    a high-quality image using the following formula:
+
+                \\tilde{Y} = \\alpha Y_G + \\beta Y_L
+
+    where Y_G and Y_L are the enhanced images produced from the GlobalRCT and
+    LocalRCT modules, respectively. Also, alpha and beta are non-negative
+    learnable weights used to combine the two enhanced images.
+
+    Args:
+        - in_channels (int) : Number of channels in input (Default: 3)
+        - hidden_dims (List[int]) : Dimensions of filters in the hidden layers 
+                                    of the Encoder 
+                                    (Default: [16, 32, 64, 128, 256, 1024])
+        - c_prime (int) : Feature dimension (Default: 128)
+        - epsilon (float) : Epsilon value used in the feature fusion formula
+                            (Default: 0.0001)
+        - c_G (int) : Feature dimension for the representative 
+                      features of the GlobalRCT (Default: 16)
+        - n_G (int) : Number of representative colors for GlobalRCT 
+                      (Default: 64)
+        - c_L (int) : Feature dimension for the representative 
+                      features of the LocalRCT (Default: 16)
+        - n_L (int) : Number of representative colors for LocalRCT 
+                      (Default: 16)
+        - grid_size (int) : Size of mesh grid for LocalRCT (Default: 31)
+
+    Forward: 
+       The output of the forward pass is a Tensor of the enhanced images Y
+       of the input X.
+    """
+
+    def __init__(self,
+                 in_channels: int = 3,
+                 hidden_dims: list = [16, 32, 64, 128, 256, 1024],
+                 c_prime: int = 128,
+                 epsilon: float = 1e-4,
+                 c_G: int = 16,
+                 n_G: int = 64,
+                 c_L: int = 16,
+                 n_L: int = 16,
+                 grid_size: int = 31) -> None:
+        """
+        Args:
+        - in_channels (int) : Number of channels in input (Default: 3)
+        - hidden_dims (List[int]) : Dimensions of filters in the hidden layers 
+                                    of the Encoder 
+                                    (Default: [16, 32, 64, 128, 256, 1024])
+        - c_prime (int) : Feature dimension (Default: 128)
+        - epsilon (float) : Epsilon value used in the feature fusion formula
+                            (Default: 0.0001)
+        - c_G (int) : Feature dimension for the representative 
+                      features of the GlobalRCT (Default: 16)
+        - n_G (int) : Number of representative colors for GlobalRCT 
+                      (Default: 64)
+        - c_L (int) : Feature dimension for the representative 
+                      features of the LocalRCT (Default: 16)
+        - n_L (int) : Number of representative colors for LocalRCT 
+                      (Default: 16)
+        - grid_size (int) : Size of mesh grid for LocalRCT (Default: 31)
+        """
+        super(RCTNet, self).__init__()
+
+        # Initialize Encoder
+        self.encoder = Encoder(
+            in_channels=in_channels,
+            hidden_dims=hidden_dims
+        )
+
+        # Initialize Feature Fusion module
+        self.feature_fusion = FeatureFusion(
+            n_filters=c_prime,
+            input_filters=hidden_dims[-4:],
+            epsilon=epsilon
+        )
+
+        # Initialize Local and Global RCTs
+        self.global_rct = GlobalRCT(
+            in_channels=in_channels,
+            c_prime=c_prime,
+            c=c_G,
+            n_G=n_G
+        )
+        self.local_rct = LocalRCT(
+            in_channels=in_channels,
+            grid_size=grid_size,
+            c_prime=c_prime,
+            c=c_L,
+            n_L=n_L
+        )
+
+        # Initialize learnable parameters alpha and beta
+        self.weights = nn.parameter.Parameter(
+            torch.tensor([0.5, 0.5], dtype=torch.float32))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        features = self.encoder(x)
+        fused_features = self.feature_fusion(features)
+
+        y_G = self.global_rct(x, fused_features[-1])
+        y_L = self.local_rct(x, fused_features[0])
+
+        # We use ReLU to keep the learnable parameters non-negative
+        y = F.relu(self.weights[0]) * y_G + F.relu(self.weights[1]) * y_L
+
+        return y
