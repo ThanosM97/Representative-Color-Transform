@@ -622,7 +622,8 @@ class RCTNet(nn.Module):
                  n_G: int = 64,
                  c_L: int = 16,
                  n_L: int = 16,
-                 grid_size: int = 31) -> None:
+                 grid_size: int = 31,
+                 device: str = "cpu") -> None:
         """
         Args:
         - in_channels (int) : Number of channels in input (Default: 3)
@@ -643,6 +644,7 @@ class RCTNet(nn.Module):
         - grid_size (int) : Size of mesh grid for LocalRCT (Default: 31)
         """
         super(RCTNet, self).__init__()
+        self.device = device
 
         # Initialize Encoder
         self.encoder = Encoder(
@@ -680,8 +682,8 @@ class RCTNet(nn.Module):
         features = self.encoder(x)
         fused_features = self.feature_fusion(features)
 
-        y_G = self.global_rct(x, fused_features[-1])
-        y_L = self.local_rct(x, fused_features[0])
+        y_G = self.global_rct(x, fused_features[-1]).to(self.device)
+        y_L = self.local_rct(x, fused_features[0]).to(self.device)
 
         # We use ReLU to keep the learnable parameters non-negative
         y = F.relu(self.weights[0]) * y_G + F.relu(self.weights[1]) * y_L
