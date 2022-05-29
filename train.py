@@ -114,7 +114,7 @@ def main(args):
             l += batch_loss.detach().cpu().item()
             print(
                 (f"Epoch: {epoch+1}/{args.epochs}, "
-                 f"Iter: {i+1}/{len(dataloader)}, Nats: {l/(i+1)}"),
+                 f"Iter: {i+1}/{len(dataloader)}, Loss: {l/(i+1)}"),
                 end='\r')
 
         # Save checkpoint
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', default=200, type=int,
                         help='Number of epochs')
 
-    parser.add_argument('--batch_size', default=128, type=int,
+    parser.add_argument('--batch_size', default=8, type=int,
                         help='Number of samples per minibatch')
 
     parser.add_argument('--lr', default=5e-4, type=float,
