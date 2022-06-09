@@ -366,7 +366,7 @@ class GlobalRCT(nn.Module):
 
         # Get the attention matrix A
         # hw x self.n
-        attention = F.softmax(torch.bmm(f_r, r_G) / self.c**0.5, dim=1)
+        attention = F.softmax(torch.bmm(f_r, r_G) / self.c**0.5, dim=2)
 
         #  Get Global Transformed Colors T_G
         t_G = self.convT_G(features)  # 3*self.n_G x 1 x 1
@@ -560,7 +560,7 @@ class LocalRCT(nn.Module):
 
                 # Get the attention matrix A
                 # HW x 4*self.n_L
-                attention = F.softmax(torch.bmm(f_k, r_k) / self.c**0.5, dim=1)
+                attention = F.softmax(torch.bmm(f_k, r_k) / self.c**0.5, dim=2)
 
                 # Enhanced B_k
                 y_L_k = torch.bmm(attention, t_k.transpose(1, 2))  # HW x 3

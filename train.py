@@ -119,7 +119,7 @@ def main(args):
 
         # Save checkpoint
         np.append(losses, l/len(dataloader))
-        if (epoch % args.checkpoint_interval == 0):
+        if ((epoch+1) % args.checkpoint_interval == 0):
             save_checkpoint(model=model, root=root, epoch=epoch)
 
     np.save(root / "losses.npy", losses)
