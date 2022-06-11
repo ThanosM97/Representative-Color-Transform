@@ -639,13 +639,11 @@ class RCTNet(nn.Module):
 
         # Initialize Local and Global RCTs
         self.global_rct = GlobalRCT(
-            in_channels=in_channels,
             c_prime=c_prime,
             c=c_G,
             n_G=n_G
         )
         self.local_rct = LocalRCT(
-            in_channels=in_channels,
             grid_size=grid_size,
             c_prime=c_prime,
             c=c_L,
