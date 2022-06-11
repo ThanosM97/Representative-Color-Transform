@@ -152,8 +152,8 @@ class FeatureFusion(nn.Module):
 
         # Convolutions for the initial single input nodes
         self.l1_out = convBnSwish(
-            in_channels=input_filters[3],
-            out_channels=n_filters, stride=1, padding=1)
+            in_channels=input_filters[3], kernel_size=1,
+            out_channels=n_filters, stride=1, padding=0)
         self.l1_h5 = convBnSwish(
             in_channels=input_filters[2],
             out_channels=n_filters, stride=1, padding=1)
@@ -178,7 +178,8 @@ class FeatureFusion(nn.Module):
         self.l3_h5 = convBnSwish(
             in_channels=n_filters, out_channels=n_filters, stride=1, padding=1)
         self.l3_out = convBnSwish(
-            in_channels=n_filters, out_channels=n_filters, stride=1, padding=1)
+            in_channels=n_filters, out_channels=n_filters,
+            kernel_size=1, stride=1, padding=0)
 
         # Initialize weights for the fusion
         self.l2_w = nn.parameter.Parameter(
@@ -276,7 +277,6 @@ class GlobalRCT(nn.Module):
 
 
     Args:
-        - in_channels (int) : Number of channels in input (Default: 3)
         - c_prime (int) : Feature dimension (Default: 128)
         - c (int) : Feature dimension for the representative 
                     features of the GlobalRCT (Default: 16)
@@ -287,14 +287,12 @@ class GlobalRCT(nn.Module):
     """
 
     def __init__(self,
-                 in_channels: int = 3,
                  c_prime: int = 128,
                  c: int = 16,
                  n_G: int = 64
                  ) -> None:
         """
         Args:
-            - in_channels (int) : Number of channels in input (Default: 3)
             - c_prime (int) : Feature dimension (Default: 128)
             - c (int) : Feature dimension for the representative 
                         features of the GlobalRCT (Default: 16)
@@ -335,28 +333,11 @@ class GlobalRCT(nn.Module):
             )
         )
 
-        # conv-bn-swish-conv block for the image features
-        self.convF = nn.Sequential(
-            convBnSwish(in_channels=in_channels,
-                        out_channels=in_channels,
-                        stride=1,
-                        padding=1),
-            nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=c,
-                kernel_size=3,
-                stride=1,
-                padding=1
-            )
-        )
-
     def forward(self,
-                x: torch.Tensor,
+                f: torch.Tensor,
                 features: torch.Tensor) -> torch.Tensor:
-        batch_size, _, h, w = x.shape
+        batch_size, _, h, w = f.shape
 
-        # Get image features F
-        f = self.convF(x)  # self.c x h x w
         f_r = f.reshape(batch_size, self.c, h*w)
         f_r = f_r.transpose(1, 2)
 
@@ -408,7 +389,6 @@ class LocalRCT(nn.Module):
 
 
     Args:
-        - in_channels (int) : Number of channels in input (Default: 3)
         - grid_size (int) : Size of mesh grid (Default: 31)
         - c_prime (int) : Feature dimension (Default: 128)
         - c (int) : Feature dimension for the representative 
@@ -420,7 +400,6 @@ class LocalRCT(nn.Module):
     """
 
     def __init__(self,
-                 in_channels: int = 3,
                  grid_size: int = 31,
                  c_prime: int = 128,
                  c: int = 16,
@@ -428,7 +407,6 @@ class LocalRCT(nn.Module):
                  ) -> None:
         """
         Args:
-            - in_channels (int) : Number of channels in input (Default: 3)
             - grid_size (int) : Size of mesh grid (Default: 31)
             - c_prime (int) : Feature dimension (Default: 128)
             - c (int) : Feature dimension for the representative 
@@ -471,25 +449,10 @@ class LocalRCT(nn.Module):
             )
         )
 
-        # conv-bn-swish-conv block for the image features
-        self.convF = nn.Sequential(
-            convBnSwish(in_channels=in_channels,
-                        out_channels=in_channels,
-                        stride=1,
-                        padding=1),
-            nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=c,
-                kernel_size=3,
-                stride=1,
-                padding=1
-            )
-        )
-
     def forward(self,
-                x: torch.Tensor,
+                f: torch.Tensor,
                 features: torch.Tensor) -> torch.Tensor:
-        batch_size, _, h, w = x.shape
+        batch_size = f.shape[0]
         spatial_size = features.shape[-1]
 
         assert spatial_size == self.grid_size+1, \
@@ -497,9 +460,6 @@ class LocalRCT(nn.Module):
              "(grid_size + 1)x(grid_size + 1), should be the same as the "
              "spatial size of the input features "
              f"({spatial_size}x{spatial_size}).")
-
-        # Get image features F
-        f = self.convF(x)  # self.c x h x w
 
         # Pad features for them to be divisible by grid_size
         f, h_new, w_new, paddings = padding(f, self.grid_size)
@@ -606,6 +566,7 @@ class RCTNet(nn.Module):
                       features of the LocalRCT (Default: 16)
         - n_L (int) : Number of representative colors for LocalRCT 
                       (Default: 16)
+        - c_F (int) : Feature dimension for the image features (Default: 16)
         - grid_size (int) : Size of mesh grid for LocalRCT (Default: 31)
 
     Forward: 
@@ -622,6 +583,7 @@ class RCTNet(nn.Module):
                  n_G: int = 64,
                  c_L: int = 16,
                  n_L: int = 16,
+                 c_F: int = 16,
                  grid_size: int = 31,
                  device: str = "cpu") -> None:
         """
@@ -641,6 +603,7 @@ class RCTNet(nn.Module):
                       features of the LocalRCT (Default: 16)
         - n_L (int) : Number of representative colors for LocalRCT 
                       (Default: 16)
+        - c_F (int) : Feature dimension for the image features (Default: 16)
         - grid_size (int) : Size of mesh grid for LocalRCT (Default: 31)
         """
         super(RCTNet, self).__init__()
@@ -657,6 +620,21 @@ class RCTNet(nn.Module):
             n_filters=c_prime,
             input_filters=hidden_dims[-4:],
             epsilon=epsilon
+        )
+
+        # conv-bn-swish-conv block for the image features
+        self.image_features = nn.Sequential(
+            convBnSwish(in_channels=in_channels,
+                        out_channels=in_channels,
+                        stride=1,
+                        padding=1),
+            nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=c_F,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
         )
 
         # Initialize Local and Global RCTs
@@ -682,8 +660,11 @@ class RCTNet(nn.Module):
         features = self.encoder(x)
         fused_features = self.feature_fusion(features)
 
-        y_G = self.global_rct(x, fused_features[-1]).to(self.device)
-        y_L = self.local_rct(x, fused_features[0]).to(self.device)
+        image_features = self.image_features(x)
+
+        y_G = self.global_rct(
+            image_features, fused_features[-1]).to(self.device)
+        y_L = self.local_rct(image_features, fused_features[0]).to(self.device)
 
         # We use ReLU to keep the learnable parameters non-negative
         y = F.relu(self.weights[0]) * y_G + F.relu(self.weights[1]) * y_L
