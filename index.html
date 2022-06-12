@@ -1,0 +1,203 @@
+<html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/latest.js?config=AM_CHTML"></script>
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+     <style> a { color: #212529; text-decoration: none; font-style: italic;} a:hover {color: rgb(49, 117, 205); } p { text-align: justify;} </style>
+     <title>Detecting Out-of-Distribution Inputs</title>
+</head>
+
+ <body>
+     <!--  url('https://user-images.githubusercontent.com/40756918/163460859-5a775f6e-e546-418d-8d12-9f055dbd68b3.jpg') -->
+    <div id ="header" class="h-25 pt-4" style="background-image: url('images/background.jpg'); color: whitesmoke;">
+        <div class="w-50 mx-auto text-center" > 
+            <h1>Representative Color Transform for Image Enhancement</h1>
+            <h5>An unofficial implementation of the paper of Kim et al.: “Representative Color Transform for Image Enhancement"</h5>
+            <p class="text-center">by <a style="color: white;" href="https://github.com/ThanosM97">Athanasios Masouris</a> and <a style="color: white;" href="https://github.com/stypoumic">Stylianos Poulakakis-Daktylidis</a></p>
+        </div>  
+    </div>
+    <section class="w-50 mx-auto">
+        <!-- INTRODUCTION & PROBLEM STATEMENT -->
+        <h2 class="mt-5">Introduction & Problem Statement</h2>
+        <p>
+            In the modern digital era, humanity is estimated to snap as many pictures, every two minutes, as were taken in the entire 19th century. Nevertheless, 
+            these photographs are often of low quality and dynamic range, with under or over-exposed lighting conditions. Additionally, in the field of professional 
+            photography, the go-to output format is RAW over JPEG or PNG, which maintains all dynamic information in the photograph at the cost of often darker images, 
+            which need additional processing steps. Consequently, image enhancement and refinement techniques have become increasingly prominent in order to improve the 
+            visual aesthetics of photos.
+        </p>
+        <p>
+            Naturally, many attempts have been proposed over the years to address the issue of image refinement, making considerable progress in that regard. 
+            In particular, contemporary research follows two distinct main approaches, namely the encoder-decoder structure (<a href="#2">Chen et al. (2018)</a>, <a href="#3">Yan et al. (2016)</a>, 
+            <a href="#4">Yang et al. (2020)</a>, <a href="#5">Kim et al. (2020)</a>) and the performance of global enhancements through intensity transformations (<a href="#6">Deng et al. (2018)</a>, <a href="#7">Kim et al. (2020)</a>, 
+            <a href="#8">Park et al. (2018)</a>, <a href="#9">Hu et al. (2018)</a>, <a href="#10">Kosugi et al. (2020)</a>, <a href="#11">Guo et al. (2020)</a>), shown in <a href="#fig1">Figures 1a</a> and <a href="#fig1">1b</a> respectively. However, the encoder-decoder structure 
+            has some limitations in that details of the input image are not preserved, and the input is restrained to fixed sizes, whereas global-based approaches do 
+            not consider all channels simultaneously and rely on pre-defined color spaces and operations, which may be insufficient for estimating arbitrary (and highly non-linear) 
+            mappings between low- and high-quality images. 
+
+          
+        </p>
+        <p>
+            On the contrary, the recent work of  <a href="#1">Kim et al. (2021)</a> successfully addresses most of these limitations by utilizing <i>Representative Color Transforms (RCT)</i>. 
+            The proposed method demonstrates an increased capacity for color transformations by utilizing adaptive representative colors derived from the input image 
+            and is independently applied on each pixel, hence allowing the enhancement of images with arbitrary sizes without the need of image resizing. These 
+            advantages motivated us in reproducing their state-of-the-art architecture in the contexts of this project. An additional incentive was the lack of an 
+            official code implementation for this work, which allowed us to get hands-on experience by attempting to make our own unofficial implementation.
+        </p>
+        <!-- img src="https://user-images.githubusercontent.com/40756918/163460964-23b556e7-fd26-4a0a-bba0-0161c0efde02.JPG" -->
+        <figure id="fig1" class="text-center">
+            <img src="images/image_refinement_approaches.PNG" alt="likelihoods" class="figure-img">
+            <figcaption class="figure-caption text-center">Figure 1: Outlines of image enhancement approaches: (a) encoder-decoder, (b) intensity transformation, and (c) representative 
+                color transform models, adapted from <a href="#1">Kim et al. (2021)</a>.</figcaption>
+        </figure>
+        <p>
+            In <a href="#1">Kim et al. (2021)</a> a novel image enhancement approach is introduced, namely Representative Color Transforms, yielding large capacities for color transformations. 
+            The overall proposed network comprises of four components: encoder, feature fusion, global RCT, and local RCT and is depicted in <a href="#fig1">Figure 1c</a>. First the encoder is utilized 
+            for extracting high-level context information, which in is in turn leveraged for determining representative and transformed (in RGB) colors for the input image. Subsequently, 
+            an attention mechanism is used for mapping each pixel color in the input image to the representative colors, by computing their similarity. The last step involves the 
+            application of representative color transforms using both coarse- and fine-scale features from the feature fusion component to obtain enhanced images from the global and 
+            local RCT modules, which are combined to produce the final image.
+        </p>
+
+        
+        <!-- IMPLEMENTATION -->
+        <h2 class="mt-4">Implementation</h2>
+        <p>
+            RCTNet consists of 4 main components, namely encoder, feature fusion, global RCT, and local RCT, with its overall architecture being depicted in <a href="#fig2">Figure 2</a>.
+        </p>
+        <figure id="fig2" class="text-center">
+            <img src="images/architecture.PNG" alt="likelihoods" class="figure-img">
+            <figcaption class="figure-caption text-center">Figure 2: An overview of the proposed RCTNet, adapted from <a href="#1">Kim et al. (2021)</a>.</figcaption>
+        </figure>
+        <h4 class="mt-4">Encoder</h4>
+        <p>
+            In computer vision encoders are generally used to extract high-level feature maps given an input image, by utilizing convolutional neural networks. 
+            The image is passed across multiple convolutional layers of the encoder, with each consecutive layer extracting higher level features through its increased 
+            receptive field. Nevertheless, in the case of RCTNet instead of only using the highest-level feature maps, multi-scale features are extracted from the last 4 
+            layers of the encoder. The architecture of the encoder comprises of a stack of 6 <i>conv-bn-swish</i> blocks. By <i>conv-bn-swish</i> the authors denote a block consisting 
+            of a convolution, followed by batch normalization and a swish activation layer. The convolutional layers of the first 5 blocks use a `3 \times 3` kernel, while for the 
+            last block an `1 \times 1` kernel is used, followed by a global average pooling layer. 
+        </p>
+        <h4 class="mt-4">Feature Fusion</h4>
+        <p>
+            The feature fusion module involves the aggregation of multi-scale feature maps, and by extension the aggregation of information of different context. 
+            More specifically, feature maps of the top encoder layers exploit their larger receptive fields to encapsulate global contexts, while features from lower levels 
+            preserve detailed local contexts. RCTNet's feature fusion component is constructed by bidirectional cross-scale connections, as in <a href="#12">Tan et al. (2020)</a>, with each single input 
+            node in <a href="#fig2">Figure 2</a> corresponding to one <i>conv-bn-swish</i> block. For nodes with multiple inputs a feature fusion layer precedes the <i>conv-bn-swish</i> block, with its output 
+            being defined as:
+        </p>
+
+        <div class="text-center my-2"> ` O = \sum_{i=1}^{M} \frac{w_i}{\epsilon + \sum_{j} w_j} I_i `</div>
+
+        <p>
+            where `w_i` are learnable weights for each input. All nodes have 128 convolutional filters with a  `3 \times 3` kernel, except for 
+            top-level nodes (red nodes), which use an  `1 \times 1` kernel instead.   
+        </p>
+        <h4 class="mt-4">Image Feature Map</h4>
+        <p>
+            An additional independent <i>conv-bn-swish</i> block is applied to the input image, thus extracting the image feature map: `F \in \mathbb{R}^{H \times W \times C}` , with the value of 16 being 
+            selected for the feature dimension `C`.
+        </p>
+        <h4 class="mt-4">Global RCT</h4>
+        <p>
+            The Global RCT component takes as input the feature map (spatial resolution: `1 \times 1`) of the feature fusion's top level (last red node), utilizing its global 
+            context to determine representative color features (`R_G \in \mathbb{R}^{C \times N_G}`) and transformed colors in RGB (`T_G \in \mathbb{R}^{3 \times N_G}`) through two distinct <i>conv-bn-swish</i> blocks. 
+            The selected values for the feature dimension `C` and the number of global representative colors `N_G` are 16 and 64 respectively. Each of the `N_G` vectors of `T_G`   (`t_i`) 
+            correspond to the transformed RGB values of the `i^{th}` representative color.
+        </p>
+
+        <p>
+            The next step involves the application of the RCT transform, which takes as inputs the reshaped input features `F_r \in \mathbb{R}^{HW \times C}`, the 
+            representative color features `R_G` and the transformed colors  `T_G` and produces an enhanced image `Y_G`. Since only `N_G` representative colors are included in `T_G`, 
+            the first step of RCT involves the mapping of pixel colors of the original image to representative colors, thus the similarity between pixel and representative 
+            colors is calculated. For the latter calculation, scaled dot product and the attention mechanism are utilized as:
+        </p>
+        <div class="text-center my-2"> ` A = softmax(\frac{F_r R_G}{\sqrt(C)}) \in \mathbb{R}^{HW \times N} `</div>
+        
+        <p>
+            where each attention weights `a_{ij}` corresponds to the similarity between the `j^{th}` representative color and the `i^{th}` pixel. Subsequently, 
+            the enhanced image `Y_G` is produced as: 
+        </p>
+        <div class="text-center my-2"> ` Y = A T^T `</div>
+        <p>
+            <i>i.e.</i>, for the  `i^{th}` pixel, the products of its attention weights with the `j^{th}` transformed representative colors are summed to determine the pixel's 
+            enhanced RGB values. 
+        </p>
+        <h4 class="mt-4">Local RCT</h4>
+        <p>
+            Similarly to the Global RCT, the Local RCT component takes as input the feature map (spatial resolution: `32 \times 32`) of the feature fusion's bottom level 
+            (last blue node), utilizing the local context this time to determine representative color features (`R_L \in \mathbb{R}^{32 \times 32 \times C \times N_L}`) and 
+            transformed colors in RGB (`T_L \in \mathbb{R}^{32 \times 32 \times 3 \times N_L}`) through two distinct <i>conv-bn-swish</i> blocks. The selected values for the 
+            feature dimension `C` and the number of local representative colors `N_L` are 16 and 16 respectively. 
+        </p>
+
+        <p>
+            Subsequently, the local RCT module takes as inputs `R_L` and `T_L` and produces different sets of representative features and transformed colors for 
+            different areas of the input image. To achieve that a `31 \times 31` uniform mesh grid is set on the input image with `32 \times 32` corner points (each corresponding to 
+            one of the `32 \times 32` spatial positions of `R_L` and `T_L`), as shown in <a href="#fig2">Figure 3</a> for a `5 \times5` mesh grid example. Each grid position `B_k` is related to four corner 
+            points, thus four sets of representative features and transformed colors, which are concatenated to produce `R_k` and `T_k`.  A grid image feature `F_k` is 
+            also extracted from `F` by making the corresponding crop on the grid region. Finally, `F_k`, `R_k` and `T_k` are fed to the RCT transform described in the Global 
+            RCT section to yield the local enhanced image region `Y_k`. This process is replicated for all grid positions to produce the final enhanced image `Y_L`.
+        </p>
+        <figure id="fig2" class="text-center">
+            <img src="images/local_RCT.PNG" alt="likelihoods" class="figure-img">
+            <figcaption class="figure-caption text-center">Figure 3:  An illustration of Local RC, adapted from <a href="#1">Kim et al. (2021)</a>.</figcaption>
+        </figure>
+        <h4 class="mt-4">Global-Local RCT Fusion</h4>
+        <p>
+            Finally, the enhanced images obtained from the global `Y_G` and local `Y_L` RCT components are combined to produce the final enhanced image `\tilde{Y}` as: 
+        </p>
+        <div class="text-center my-2"> ` \tilde{Y} = \alpha Y_G + \beta Y_L`</div>
+        <p>
+            where `\alpha` and `\beta` are non-negative learnable weights. 
+        </p>
+        <h4 class="mt-4">Loss Function</h4>
+        <p>
+            The used loss function comprises of two distinct terms, with the first term corresponding to the mean absolute error (<i>L1 loss</i>) 
+            between the predicted and ground-truth enhanced images. The second term is the sum of the <i>L1</i> losses between the feature representations 
+            extracted for the predicted and ground-truth images from the `2^{nd}`, `4^{th}`, and `6^{th}` layer of a <i>VGG-16</i> [<a href="#13">Simonyan et al. (2014)</a> ] network, pretrained 
+            on ImageNet [<a href="#14">Russakovsky et al. (2015)</a> ]. Consequently, given `\tilde{Y}`: the high-quality image prediction and `Y`: the ground-truth high-quality 
+            image the loss function is given as: 
+        </p>
+        <div class="text-center my-2"> ` \mathcal{L} = || \tilde{Y} - Y ||_1 + \lambda  \sum_{k=2,4,6} || \phi^k(\tilde{Y}) - \phi^k(Y) ||_1`</div>
+        <p>
+            where the hyperparameter `\lambda` was set to 0.04 to balance the two terms.
+        </p>
+
+
+
+        
+        <!-- RESULTS -->
+        <h2 class="mt-4">Results</h2>
+
+        <!-- CONCLUSIONS -->
+        <h2 class="mt-4">Conclusions</h2>
+
+        <!-- ACKNOWLEDGEMENTS -->
+        <h2 class="mt-4">Acknowledgements</h2>
+        
+
+        <!-- REFERENCES -->
+        <h2 class="mt-5">References</h2>
+        <p id="1">[1] Kim, H., Choi, S. M., Kim, C. S., & Koh, Y. J. (2021). Representative Color Transform for Image Enhancement. In Proceedings of the IEEE/CVF International Conference on Computer Vision (pp. 4459-4468).</p>
+        <p id="2">[2] Chen, Y. S., Wang, Y. C., Kao, M. H., & Chuang, Y. Y. (2018). Deep photo enhancer: Unpaired learning for image enhancement from photographs with gans. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (pp. 6306-6314).</p>
+        <p id="3">[3] Yan, Z., Zhang, H., Wang, B., Paris, S., & Yu, Y. (2016). Automatic photo adjustment using deep neural networks. ACM Transactions on Graphics (TOG), 35(2), 1-15.</p>
+        <p id="4">[4] Yang, W., Wang, S., Fang, Y., Wang, Y., & Liu, J. (2020). From fidelity to perceptual quality: A semi-supervised approach for low-light image enhancement. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition (pp. 3063-3072)</p>
+        <p id="5">[5] Kim, H. U., Koh, Y. J., & Kim, C. S. (2020, August). PieNet: Personalized image enhancement network. In European Conference on Computer Vision (pp. 374-390). Springer, Cham.</p>
+        <p id="6">[6] Deng, Y., Loy, C. C., & Tang, X. (2018, October). Aesthetic-driven image enhancement by adversarial learning. In Proceedings of the 26th ACM international conference on Multimedia (pp. 870-878).</p>
+        <p id="7">[7] Kim, H. U., Koh, Y. J., & Kim, C. S. (2020, August). Global and local enhancement networks for paired and unpaired image enhancement. In European Conference on Computer Vision (pp. 339-354). Springer, Cham.</p>
+        <p id="8">[8] Park, J., Lee, J. Y., Yoo, D., & Kweon, I. S. (2018). Distort-and-recover: Color enhancement using deep reinforcement learning. In Proceedings of the IEEE conference on computer vision and pattern recognition (pp. 5928-5936).</p>
+        <p id="9">[9] Hu, Y., He, H., Xu, C., Wang, B., & Lin, S. (2018). Exposure: A white-box photo post-processing framework. ACM Transactions on Graphics (TOG), 37(2), 1-17.</p>
+        <p id="10">[10] Kosugi, S., & Yamasaki, T. (2020, April). Unpaired image enhancement featuring reinforcement-learning-controlled image editing software. In Proceedings of the AAAI Conference on Artificial Intelligence (Vol. 34, No. 07, pp. 11296-11303).</p>
+        <p id="11">[11] Guo, C., Li, C., Guo, J., Loy, C. C., Hou, J., Kwong, S., & Cong, R. (2020). Zero-reference deep curve estimation for low-light image enhancement. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (pp. 1780-1789).</p>
+        <p id="12">[12] Tan, M., Pang, R., & Le, Q. V. (2020). Efficientdet: Scalable and efficient object detection. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition (pp. 10781-10790).</p>
+        <p id="13">[13] Simonyan, K., & Zisserman, A. (2014). Very deep convolutional networks for large-scale image recognition. arXiv preprint arXiv:1409.1556.</p>
+        <p id="14">[14] Russakovsky, O., Deng, J., Su, H., Krause, J., Satheesh, S., Ma, S., ... & Fei-Fei, L. (2015). Imagenet large scale visual recognition challenge. International journal of computer vision, 115(3), 211-252.</p>
+    
+    </section>
+    
+   
+ </body>
+ </html>
