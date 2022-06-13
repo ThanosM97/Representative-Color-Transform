@@ -48,7 +48,7 @@
         </p>
         <!-- img src="https://user-images.githubusercontent.com/40756918/163460964-23b556e7-fd26-4a0a-bba0-0161c0efde02.JPG" -->
         <figure id="fig1" class="text-center">
-            <img src="images/image_refinement_approaches.PNG" alt="likelihoods" class="figure-img">
+            <img src="images/image_refinement_approaches.PNG" width="80%" alt="likelihoods" class="figure-img">
             <figcaption class="figure-caption text-center">Figure 1: Outlines of image enhancement approaches: (a) encoder-decoder, (b) intensity transformation, and (c) representative 
                 color transform models, adapted from <a href="#1">Kim et al. (2021)</a>.</figcaption>
         </figure>
@@ -68,7 +68,7 @@
             RCTNet consists of 4 main components, namely encoder, feature fusion, global RCT, and local RCT, with its overall architecture being depicted in <a href="#fig2">Figure 2</a>.
         </p>
         <figure id="fig2" class="text-center">
-            <img src="images/architecture.PNG" alt="likelihoods" class="figure-img">
+            <img src="images/architecture.PNG" width="80%" alt="likelihoods" class="figure-img">
             <figcaption class="figure-caption text-center">Figure 2: An overview of the proposed RCTNet, adapted from <a href="#1">Kim et al. (2021)</a>.</figcaption>
         </figure>
         <h4 class="mt-4">Encoder</h4>
@@ -83,7 +83,7 @@
         <h4 class="mt-4">Feature Fusion</h4>
         <p>
             The feature fusion module involves the aggregation of multi-scale feature maps, and by extension the aggregation of information of different context. 
-            More specifically, feature maps of the top encoder layers exploit their larger receptive fields to encapsulate global contexts, while features from lower levels 
+            More specifically, feature maps of the coarsest encoder layers exploit their larger receptive fields to encapsulate global contexts, while features from lower levels 
             preserve detailed local contexts. RCTNet's feature fusion component is constructed by bidirectional cross-scale connections, as in <a href="#12">Tan et al. (2020)</a>, with each single input 
             node in <a href="#fig2">Figure 2</a> corresponding to one <i>conv-bn-swish</i> block. For nodes with multiple inputs a feature fusion layer precedes the <i>conv-bn-swish</i> block, with its output 
             being defined as:
@@ -93,7 +93,7 @@
 
         <p>
             where `w_i` are learnable weights for each input. All nodes have 128 convolutional filters with a  `3 \times 3` kernel, except for 
-            top-level nodes (red nodes), which use an  `1 \times 1` kernel instead.   
+            coarsest-level nodes (red nodes), which use an  `1 \times 1` kernel instead.   
         </p>
         <h4 class="mt-4">Image Feature Map</h4>
         <p>
@@ -102,7 +102,7 @@
         </p>
         <h4 class="mt-4">Global RCT</h4>
         <p>
-            The Global RCT component takes as input the feature map (spatial resolution: `1 \times 1`) of the feature fusion's top level (last red node), utilizing its global 
+            The Global RCT component takes as input the feature map (spatial resolution: `1 \times 1`) of the feature fusion's coarsest level (last red node), utilizing its global 
             context to determine representative color features (`R_G \in \mathbb{R}^{C \times N_G}`) and transformed colors in RGB (`T_G \in \mathbb{R}^{3 \times N_G}`) through two distinct <i>conv-bn-swish</i> blocks. 
             The selected values for the feature dimension `C` and the number of global representative colors `N_G` are 16 and 64 respectively. Each of the `N_G` vectors of `T_G`   (`t_i`) 
             correspond to the transformed RGB values of the `i^{th}` representative color.
@@ -117,7 +117,7 @@
         <div class="text-center my-2"> ` A = softmax(\frac{F_r R_G}{\sqrt(C)}) \in \mathbb{R}^{HW \times N} `</div>
         
         <p>
-            where each attention weights `a_{ij}` corresponds to the similarity between the `j^{th}` representative color and the `i^{th}` pixel. Subsequently, 
+            where each attention weight `a_{ij}` corresponds to the similarity between the `j^{th}` representative color and the `i^{th}` pixel. Subsequently, 
             the enhanced image `Y_G` is produced as: 
         </p>
         <div class="text-center my-2"> ` Y = A T^T `</div>
@@ -127,22 +127,22 @@
         </p>
         <h4 class="mt-4">Local RCT</h4>
         <p>
-            Similarly to the Global RCT, the Local RCT component takes as input the feature map (spatial resolution: `32 \times 32`) of the feature fusion's bottom level 
-            (last blue node), utilizing the local context this time to determine representative color features (`R_L \in \mathbb{R}^{32 \times 32 \times C \times N_L}`) and 
-            transformed colors in RGB (`T_L \in \mathbb{R}^{32 \times 32 \times 3 \times N_L}`) through two distinct <i>conv-bn-swish</i> blocks. The selected values for the 
-            feature dimension `C` and the number of local representative colors `N_L` are 16 and 16 respectively. 
+            The Local RCT component takes as input the feature map (spatial resolution: `32 \times 32`) of the feature fusion's finest level 
+            (last blue node), utilizing the contexts of local information this time to determine representative color features (`R_L \in \mathbb{R}^{32 \times 32 \times C \times N_L}`) and 
+            transformed colors in RGB  (`T_L \in \mathbb{R}^{32 \times 32 \times 3 \times N_L}`) through two distinct <i>conv-bn-swish</i> blocks. The selected values for the 
+            feature dimension `C` and the number of local representative colors `N_L` are both 16. 
         </p>
 
         <p>
             Subsequently, the local RCT module takes as inputs `R_L` and `T_L` and produces different sets of representative features and transformed colors for 
-            different areas of the input image. To achieve that a `31 \times 31` uniform mesh grid is set on the input image with `32 \times 32` corner points (each corresponding to 
+            different areas of the input image. To achieve that, a `31 \times 31` uniform mesh grid is set on the input image, thus producing `32 \times 32` corner points in the image (each corresponding to 
             one of the `32 \times 32` spatial positions of `R_L` and `T_L`), as shown in <a href="#fig2">Figure 3</a> for a `5 \times5` mesh grid example. Each grid position `B_k` is related to four corner 
             points, thus four sets of representative features and transformed colors, which are concatenated to produce `R_k` and `T_k`.  A grid image feature `F_k` is 
-            also extracted from `F` by making the corresponding crop on the grid region. Finally, `F_k`, `R_k` and `T_k` are fed to the RCT transform described in the Global 
+            also extracted from `F`, described in the Image Feature Map Section, by making the corresponding crop on the grid region. Finally, `F_k`, `R_k` and `T_k` are fed to the RCT transform described in the Global 
             RCT section to yield the local enhanced image region `Y_k`. This process is replicated for all grid positions to produce the final enhanced image `Y_L`.
         </p>
         <figure id="fig2" class="text-center">
-            <img src="images/local_RCT.PNG" alt="likelihoods" class="figure-img">
+            <img src="images/local_RCT.PNG" width="50%" alt="likelihoods" class="figure-img">
             <figcaption class="figure-caption text-center">Figure 3:  An illustration of Local RC, adapted from <a href="#1">Kim et al. (2021)</a>.</figcaption>
         </figure>
         <h4 class="mt-4">Global-Local RCT Fusion</h4>
@@ -157,9 +157,9 @@
         <p>
             The used loss function comprises of two distinct terms, with the first term corresponding to the mean absolute error (<i>L1 loss</i>) 
             between the predicted and ground-truth enhanced images. The second term is the sum of the <i>L1</i> losses between the feature representations 
-            extracted for the predicted and ground-truth images from the `2^{nd}`, `4^{th}`, and `6^{th}` layer of a <i>VGG-16</i> [<a href="#13">Simonyan et al. (2014)</a> ] network, pretrained 
-            on ImageNet [<a href="#14">Russakovsky et al. (2015)</a> ]. Consequently, given `\tilde{Y}`: the high-quality image prediction and `Y`: the ground-truth high-quality 
-            image the loss function is given as: 
+            extracted for the predicted and ground-truth images from the `2^{nd}`, `4^{th}`, and `6^{th}` layer of a <i>VGG-16</i> [<a href="#13">Simonyan et al. (2014)</a>] network, pretrained 
+            on ImageNet [<a href="#14">Russakovsky et al. (2015)</a>]. Consequently, given `\tilde{Y}`: the high-quality image prediction and `Y`: the ground-truth high-quality 
+            image, the loss function is given as: 
         </p>
         <div class="text-center my-2"> ` \mathcal{L} = || \tilde{Y} - Y ||_1 + \lambda  \sum_{k=2,4,6} || \phi^k(\tilde{Y}) - \phi^k(Y) ||_1`</div>
         <p>
