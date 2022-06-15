@@ -1,4 +1,4 @@
-"""This module implements the training of our model."""
+"""This module implements the training of RCTNet."""
 import argparse
 import json
 from datetime import datetime
@@ -33,6 +33,20 @@ def save_checkpoint(model: RCTNet, root: Path, epoch: int) -> None:
         model.state_dict(),
         save_path / "checkpoint.pt"
     )
+
+
+def load_checkpoint(model: RCTNet, path: Path, device: str) -> None:
+    """Load model weights from checkpoint.
+
+    This method is called when the user specifies a checkpoint path to load
+    the model's weights.
+
+    Args:
+        - model (RCTNet): The trained RCTNet model
+        - path (Path): Path for the checkpoint    
+    """
+
+    return model
 
 
 def main(args):
@@ -72,6 +86,11 @@ def main(args):
 
     # Move model to device selected
     model = model.to(device)
+
+    # Load model's weights if checkpoint is given
+    if args.checkpoint:
+        model.load_state_dict(torch.load(
+            args.checkpoint, map_location=torch.device(device)))
 
     # Initialize optimizer
     optimizer = Adam(model.parameters(), lr=args.lr,
@@ -120,7 +139,7 @@ def main(args):
         # Save checkpoint
         np.append(losses, l/len(dataloader))
         if ((epoch+1) % args.checkpoint_interval == 0):
-            save_checkpoint(model=model, root=root, epoch=epoch)
+            save_checkpoint(model=model, root=root, epoch=epoch+1)
 
     np.save(root / "losses.npy", losses)
 
@@ -132,10 +151,11 @@ if __name__ == "__main__":
     parser.add_argument('--images', required=True,
                         help='Path to the directory of images to be enhanced')
 
-    parser.add_argument('--targets', required=True,
-                        help='Path to the directory of enhanced images')
+    parser.add_argument(
+        '--targets', required=True,
+        help='Path to the directory of groundtruth enhanced images')
 
-    parser.add_argument('--epochs', default=200, type=int,
+    parser.add_argument('--epochs', default=500, type=int,
                         help='Number of epochs')
 
     parser.add_argument('--batch_size', default=8, type=int,
@@ -147,8 +167,9 @@ if __name__ == "__main__":
     parser.add_argument('--weight_decay', default=1e-5, type=float,
                         help='Weight decay of Adam optimizer')
 
-    parser.add_argument('--config', default=None, type=str,
-                        help="Path to configurations file for RCTNet model")
+    parser.add_argument(
+        '--config', default=None, type=str,
+        help="Path to configurations file for the RCTNet model")
 
     parser.add_argument('--checkpoint', default=None, type=str,
                         help='Path to previous checkpoint')

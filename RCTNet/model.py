@@ -403,7 +403,8 @@ class LocalRCT(nn.Module):
                  grid_size: int = 31,
                  c_prime: int = 128,
                  c: int = 16,
-                 n_L: int = 16
+                 n_L: int = 16,
+                 device: str = "cpu"
                  ) -> None:
         """
         Args:
@@ -412,12 +413,14 @@ class LocalRCT(nn.Module):
             - c (int) : Feature dimension for the representative 
                         features of the LocalRCT (Default: 16)
             - n_L (int) : Number of representative colors (Default: 16)
+            - device (str) : Device to use (Default: cpu)
         """
         super(LocalRCT, self).__init__()
 
         self.grid_size = grid_size
         self.c = c
         self.n_L = n_L
+        self.device = device
 
         # conv-bn-swish-conv block for the representative features
         self.convR_L = nn.Sequential(
@@ -481,7 +484,7 @@ class LocalRCT(nn.Module):
         # spatial x spatial x channels x n_L
         t_L = t_L.permute(0, 3, 4, 1, 2)
 
-        y_L = torch.zeros(batch_size, 3, h_new, w_new)
+        y_L = torch.zeros(batch_size, 3, h_new, w_new).to(device=self.device)
         for i in range(self.grid_size):
             for j in range(self.grid_size):
                 # Get grid feature F_k
@@ -607,7 +610,6 @@ class RCTNet(nn.Module):
         - grid_size (int) : Size of mesh grid for LocalRCT (Default: 31)
         """
         super(RCTNet, self).__init__()
-        self.device = device
 
         # Initialize Encoder
         self.encoder = Encoder(
@@ -647,7 +649,8 @@ class RCTNet(nn.Module):
             grid_size=grid_size,
             c_prime=c_prime,
             c=c_L,
-            n_L=n_L
+            n_L=n_L,
+            device=device
         )
 
         # Initialize learnable parameters alpha and beta
@@ -661,8 +664,8 @@ class RCTNet(nn.Module):
         image_features = self.image_features(x)
 
         y_G = self.global_rct(
-            image_features, fused_features[-1]).to(self.device)
-        y_L = self.local_rct(image_features, fused_features[0]).to(self.device)
+            image_features, fused_features[-1])
+        y_L = self.local_rct(image_features, fused_features[0])
 
         # We use ReLU to keep the learnable parameters non-negative
         y = F.relu(self.weights[0]) * y_G + F.relu(self.weights[1]) * y_L
