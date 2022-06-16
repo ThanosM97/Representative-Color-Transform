@@ -27,12 +27,14 @@ class RCTDataset(Dataset):
     """
 
     def __init__(
-            self, img_X_dir, img_target_dir):
+            self, img_X_dir, img_target_dir, augmentation=True):
         super(RCTDataset, self).__init__()
         self.img_X_dir = img_X_dir
         self.img_target_dir = img_target_dir
+        self.augmentation = augmentation
 
-        self.images = [file.name for file in Path(self.img_X_dir).glob('*')]
+        self.images = [file.name for file in Path(self.img_X_dir).glob(
+            '*') if file.suffix in ['.png', '.jpg', '.jpeg']]
 
     def __len__(self):
         return len(self.images)
@@ -43,21 +45,22 @@ class RCTDataset(Dataset):
         image_X = read_image(img_X_path).float()
         image_target = read_image(img_target_path).float()
 
-        # Resize
-        size = tuple(image_X.shape[1:])
-        resized = tuple([int(d*1.25) for d in size])
-        image_X = TF.resize(img=image_X, size=resized)
-        image_target = TF.resize(img=image_target, size=resized)
+        if self.augmentation:
+            # Resize
+            size = tuple(image_X.shape[1:])
+            resized = tuple([int(d*1.25) for d in size])
+            image_X = TF.resize(img=image_X, size=resized)
+            image_target = TF.resize(img=image_target, size=resized)
 
-        # Random crop
-        i, j, h, w = transforms.RandomCrop.get_params(
-            image_X, output_size=size)
-        image_X = TF.crop(image_X, i, j, h, w)
-        image_target = TF.crop(image_target, i, j, h, w)
+            # Random crop
+            i, j, h, w = transforms.RandomCrop.get_params(
+                image_X, output_size=size)
+            image_X = TF.crop(image_X, i, j, h, w)
+            image_target = TF.crop(image_target, i, j, h, w)
 
-        # Random rotation by a multiple of 90 degrees
-        angle = int(torch.randint(0, 3, size=(1,))) * 90
-        image_X = TF.rotate(image_X, angle)
-        image_target = TF.rotate(image_target, angle)
+            # Random rotation by a multiple of 90 degrees
+            angle = int(torch.randint(0, 3, size=(1,))) * 90
+            image_X = TF.rotate(image_X, angle)
+            image_target = TF.rotate(image_target, angle)
 
         return image_X, image_target
