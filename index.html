@@ -263,7 +263,7 @@
             scenarios was used for the purposes of our
             experiment. It is composed of a training partition, containing 485 pairs of low- and normal-light image
             pairs, and a test partition, containing 15 such pairs.
-            All the images have a resolution of `400 \times 600`.
+            All the images have a resolution of `400 \times 600`. For the purposes of training, all images were randomly cropped and rotated by a multiple of 90 degrees.
         </p>
         <h4 class="mt-4">Evaluation Metrics</h4>
         <p>
@@ -305,8 +305,7 @@
             The results, in terms of the PSNR and SSIM evaluation metrics, calculated for our implementation of RCTNet
             are depicted in <a href="#tab1">Table 1</a>, along with results of competing image
             enhancement methods and the official implementation of RCTNet, as reported in <a href="#1">Kim et al.
-                (2021)</a>. It becomes evident that our results approximate those reported for the official
-            implementation for both examined metrics.
+                (2021)</a>. It becomes evident that our results do not approximate those reported for the official implementation for both examined metrics. 
         </p>
 
         <div class="center d-flex justify-content-around">
@@ -383,8 +382,8 @@
                         </tr>
                         <tr>
                             <td>RCTNet (ours)* </td>
-                            <td>20.52</td>
-                            <td>0.816</td>
+                            <td>18.81</td>
+                            <td>0.732</td>
                         </tr>
                         <tr>
                             <td>RCTNet + BF [<a href="#1">Kim et al. (2021)</a>]</td>
@@ -394,18 +393,16 @@
                     </tbody>
                 </table>
                 <p>
-                    At this point we should mention that during the evaluation of our results, we noticed a high
-                    variance for both metrics caused by the random seed selection.
-                    To account for this variance, we executed our evaluation for 100 randomly selected seeds. The
-                    reported results in <a href="#tab1">Table 1</a>, for our implementation,
-                    correspond to the average values of these 100 executions. The mean, standard deviation, maximum, and
-                    minimum values for both evaluation metrics are shown in
-                    <a href="#tab2">Table 2</a>. Additionally, in Figures <a href="#fig4">4.a</a> and <a
-                        href="#fig4">4.b</a>, the plotted density distributions for PSNR and SSIM, respectively, depict
-                    the observed high variance for both
-                    metrics. Furthermore, some outliers can also be observed in both Figures, which could potentially
-                    provide spurious results regarding the model's performance,
-                    in case the observed variance is not accounted for.
+                    Interestingly, the results of <a href="#tab1">Table 1</a> deviate significantly in case the augmentations proposed by the authors 
+                    (random cropping and random rotation by a multiple of 90 degrees) are also used during the evaluation. This finding 
+                    indicates that the model favours augmented images, since during training we performed augmentation operations on all 
+                    input images and for every epoch. While the authors refer to the same augmentations, they do not specify the frequency, with which those 
+                    augmentations were performed. This phenomenon becomes more evident by looking at the quantitative results, when augmentations were used 
+                    on the test images, as shown in <a href="#tab2">Table 2</a>. Furthermore, the innate randomness of the augmentation operations leads to a high variance for 
+                    both metrics, and thus a less robust model. To account for this variance, we executed our evaluation for 100 randomly selected seeds. 
+                    The mean, standard deviation, maximum, and minimum values for both evaluation metrics are shown in <a href="#tab2">Table 2</a>, when augmentations are also 
+                    included in the test set. Additionally, in Figures <a href="#fig4">4.a</a> and <a href="#fig4">4.b</a>, the plotted density distributions for 
+                    PSNR and SSIM, respectively, depict the observed high variance for both metrics.
                 </p>
 
                 <div class="center d-flex justify-content-around">
@@ -413,7 +410,7 @@
                         <table id="tab2" style="width: 70%; margin-left: auto; margin-right: auto;"
                             class="table table-border text-center">
                             <caption class="figure-caption text-center">Table 2: Mean, standard deviation, maximum, and
-                                minimum values for PSNR and SSIM, for 100 executions with different random seeds.
+                                minimum values for PSNR and SSIM, for 100 executions with different random seeds, when augmentations are also included in the test set.
                             </caption>
                             <thead>
                                 <tr>
@@ -456,7 +453,7 @@
                                 onclick="document.getElementById('modal').style.display='block'; document.getElementById('modal-img').src='images/SSIM_distribution.png';" />
                             <figcaption class="figure-caption text-center">Figure 4: Density distributions of the
                                 measured values for (a) PSNR and (b) SSIM after 100 executions with different random
-                                seeds.</a></figcaption>
+                                seeds, when augmentations are also included in the test set.</a></figcaption>
                         </figure>
 
 
@@ -524,20 +521,14 @@
                                 <!-- CONCLUSIONS -->
                                 <h2 class="mt-4">Conclusions</h2>
                                 <p>
-                                    In conclusion, our analysis showed comparable results to the ones presented in the
-                                    original paper. The qualitative evaluation on the LOL dataset
-                                    facilitated our implementation's capability of learning to successfully enhance
-                                    low-light images with color tones matching those of the ground-truth enhanced
-                                    image. The observed dissimilarity in terms of color saturation could possibly be
-                                    accounted for by tuning certain hyperparameters of the model or training for more
-                                    epochs. Regarding our quantitative findings, the measured values for PSNR
-                                    corresponding to our implementation were lower to the ones corresponding to the
-                                    original
-                                    implementation, whereas for SSIM the opposite was true. Nevertheless, these
-                                    discrepancies could be attributed to the high variance that was observed during the
-                                    analysis,
-                                    especially when considering that <a href="#1">Kim et al. (2021)</a> make no
-                                    reference of the random seed selection corresponding to their reported results.
+                                    In conclusion, our analysis did not show comparable results to the ones presented in the original paper. 
+                                    The qualitative evaluation on the LOL dataset facilitated our implementation's capability of learning 
+                                    to successfully enhance low-light images with color tones matching those of the ground-truth enhanced 
+                                    image. The observed dissimilarity in terms of color saturation could possibly be accounted for by 
+                                    tuning certain hyperparameters of the model or training for more epochs. Regarding our quantitative 
+                                    findings, the measured values for both PSNR and SSIM, were lower for our implementation compared to 
+                                    the ones corresponding to the original implementation. Nevertheless, these discrepancies could be attributed to 
+                                    the frequency with which the image augmentations were performed in our implementation during training. 
                                 </p>
 
                                 <div id="modal" class="w3-modal" onclick="this.style.display='none'">
