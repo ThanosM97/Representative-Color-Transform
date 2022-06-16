@@ -1,13 +1,13 @@
 """This module implements the evaluation of RCTNet."""
 import argparse
-from pathlib import Path
-import random
 import json
+import random
+from pathlib import Path
 
 import numpy as np
-from matplotlib import pyplot as plt
 import scipy.stats as stats
 import torch
+from matplotlib import pyplot as plt
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
 from torch.utils.data import DataLoader
@@ -72,7 +72,7 @@ def main(args):
         device = args.device
 
     # Initialize dataloader
-    dataset = RCTDataset(args.images, args.targets)
+    dataset = RCTDataset(args.images, args.targets, augmentation=False)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
     # Initialize RCT model
@@ -102,6 +102,8 @@ def main(args):
         model.load_state_dict(torch.load(
             args.checkpoint, map_location=torch.device(device)))
 
+    max_psnr = 0
+    max_seed = 0
     random_seeds = random.sample(range(0, 1000), args.nseeds)
     with torch.no_grad():
         total_psnr = []
@@ -127,6 +129,9 @@ def main(args):
                         channel_axis=0,
                         data_range=255))
 
+            if np.mean(psnr_scores) > max_psnr:
+                max_psnr = np.mean(psnr_scores)
+                max_seed = seed
             total_psnr.append(np.mean(psnr_scores))
             total_ssim.append(np.mean(ssim_scores))
             print(f"[{i+1}/{args.nseeds}]", end="\r")
@@ -135,6 +140,7 @@ def main(args):
     density(total_ssim, root / Path("ssim"), "SSIM")
     log(total_psnr, root / Path("log.txt"), "PSNR")
     log(total_ssim, root / Path("log.txt"), "SSIM")
+    print(f"Seed: {max_seed} PSNR: {max_psnr}")
 
 
 if __name__ == "__main__":
@@ -152,12 +158,12 @@ if __name__ == "__main__":
         '--save', required=True,
         help='Path to the save plots and log file with metrics')
 
+    parser.add_argument('--checkpoint', required=True, type=str,
+                        help='Path to the checkpoint')
+
     parser.add_argument(
         '--config', default=None, type=str,
         help="Path to configurations file for the RCTNet model")
-
-    parser.add_argument('--checkpoint', default=None, type=str,
-                        help='Path to previous checkpoint')
 
     parser.add_argument('--batch_size', default=8, type=int,
                         help='Number of samples per minibatch')

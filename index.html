@@ -205,16 +205,24 @@
         </p>
 
         <p>
-            Subsequently, the local RCT module takes as inputs `R_L` and `T_L` and produces different sets of representative features and transformed colors for
-            different areas of the input image. To achieve that, a `31 \times 31` uniform mesh grid is set on the input image, thus producing `32 \times 32` corner points in the image (each corresponding to
-            one of the `32 \times 32` spatial positions of `R_L` and `T_L`), as shown in <a href="#fig3">Figure 3</a> for a `5 \times5` mesh grid example. Each grid position `B_k` is related to four corner
-            points, thus four sets of representative features and transformed colors, which are concatenated to produce `R_k` and `T_k`.  A grid image feature `F_k` is
-            also extracted from `F`, described in the Image Feature Map Section, by making the corresponding crop on the grid region. Finally, `F_k`, `R_k` and `T_k` are fed to the RCT transform described in the Global
-            RCT section to yield the local enhanced image region `Y_k`. This process is replicated for all grid positions to produce the final enhanced image `Y_L`.
+            Subsequently, the local RCT module takes as inputs `R_L` and `T_L` and produces different sets of
+            representative features and transformed colors for
+            different areas of the input image. To achieve that, a `31 \times 31` uniform mesh grid is set on the input
+            image, thus producing `32 \times 32` corner points in the image (each corresponding to
+            one of the `32 \times 32` spatial positions of `R_L` and `T_L`), as shown in <a href="#fig3">Figure 3</a>
+            for a `5 \times5` mesh grid example. Each grid position `B_k` is related to four corner
+            points, thus four sets of representative features and transformed colors, which are concatenated to produce
+            `R_k` and `T_k`. A grid image feature `F_k` is
+            also extracted from `F`, described in the Image Feature Map Section, by making the corresponding crop on the
+            grid region. Finally, `F_k`, `R_k` and `T_k` are fed to the RCT transform described in the Global
+            RCT section to yield the local enhanced image region `Y_k`. This process is replicated for all grid
+            positions to produce the final enhanced image `Y_L`.
         </p>
         <figure id="fig3" class="text-center">
-            <img src="images/local_RCT.PNG" width="50%" alt="likelihoods" class="figure-img">
-            <figcaption class="figure-caption text-center">Figure 3:  An illustration of Local RC, adapted from <a href="#1">Kim et al. (2021)</a>.</figcaption>
+            <img src="images/local_RCT.PNG" width="50%" style="cursor:zoom-in" alt="likelihoods" class="figure-img"
+                onclick="document.getElementById('modal').style.display='block'; document.getElementById('modal-img').src='images/local_RCT.PNG';">
+            <figcaption class="figure-caption text-center">Figure 3: An illustration of Local RC, adapted from <a
+                    href="#1">Kim et al. (2021)</a>.</figcaption>
         </figure>
         <h4 class="mt-4">Global-Local RCT Fusion</h4>
         <p>
@@ -251,215 +259,369 @@
 
         <h4 class="mt-4">Dataset</h4>
         <p>
-            The <i>LOw-Light (LOL)</i> dataset [<a href="#16">Wang et al. (2004)</a>] for image enhancement in low-light scenarios was used for the purposes of our
-            experiment. It is composed of a training partition, containing 485 pairs of low- and normal-light image pairs, and a test partition, containing 15 such pairs.
+            The <i>LOw-Light (LOL)</i> dataset [<a href="#16">Wang et al. (2004)</a>] for image enhancement in low-light
+            scenarios was used for the purposes of our
+            experiment. It is composed of a training partition, containing 485 pairs of low- and normal-light image
+            pairs, and a test partition, containing 15 such pairs.
             All the images have a resolution of `400 \times 600`.
         </p>
         <h4 class="mt-4">Evaluation Metrics</h4>
         <p>
-            The perceived enhancement of an image from different methods can be subjective. Therefore, it is salient to establish certain metrics that would allow the
-            comparison of different image enhancement algorithms on the produced image quality. For the quantitative evaluation of RCTNet we leveraged two distinct evaluation
-            metrics, which are well-established for assessing image enhancement models, namely <i>peak signal-to-noise ratio (PSNR)</i> and <i>Structural SIMilarity (SSIM)</i>.
+            The perceived enhancement of an image from different methods can be subjective. Therefore, it is salient to
+            establish certain metrics that would allow the
+            comparison of different image enhancement algorithms on the produced image quality. For the quantitative
+            evaluation of RCTNet we leveraged two distinct evaluation
+            metrics, which are well-established for assessing image enhancement models, namely <i>peak signal-to-noise
+                ratio (PSNR)</i> and <i>Structural SIMilarity (SSIM)</i>.
         </p>
         <p>
-            PSNR corresponds to the ratio between the power (maximum value) of a signal and the power of a noisy distortion and is expressed in a logarithmic decibel scale.
-            In the image domain it measures the ratio between the power of the ground-truth enhanced image (`Y`) and the power of the enhanced image prediction (`\tilde{Y}`), produced
+            PSNR corresponds to the ratio between the power (maximum value) of a signal and the power of a noisy
+            distortion and is expressed in a logarithmic decibel scale.
+            In the image domain it measures the ratio between the power of the ground-truth enhanced image (`Y`) and the
+            power of the enhanced image prediction (`\tilde{Y}`), produced
             by the network, as:
         </p>
         <div class="text-center my-2"> ` PSNR = 20log_{10}(\frac{max(Y)}{MSE(Y,\tilde(Y))}) `</div>
         <p>
-            where MSE is the mean squared error between the ground-truth and predicted images. Therefore, the higher PNSR values correspond to better reconstruction of the
-            degraded images. For colour images, the MSE is averaged across individual channels. Nevertheless, PSNR is limited in that it solely relies on numerical pixel
+            where MSE is the mean squared error between the ground-truth and predicted images. Therefore, the higher
+            PNSR values correspond to better reconstruction of the
+            degraded images. For colour images, the MSE is averaged across individual channels. Nevertheless, PSNR is
+            limited in that it solely relies on numerical pixel
             value comparisons, disregarding biological factors of the human vision systems, which brings us to SSIM.
         </p>
         <p>
-            SSIM, introduced by <a href="#15">Wei et al. (2018)</a>, attempts to replicate the behaviour of the human visual perception system, which is highly capable of identifying structural information
-            in a scene, and by extension differences between the predicted and ground-truth enhanced versions of an image. The value ranges from `-1` to `1`, where `1`
-            corresponds to identical images. SSIM extracts 3 key features from an image, namely luminance, contrast, and structure and subsequently applies certain comparison
-            functions to these features to compare the given images, followed by a final combination function that aggregates the final result.
+            SSIM, introduced by <a href="#15">Wei et al. (2018)</a>, attempts to replicate the behaviour of the human
+            visual perception system, which is highly capable of identifying structural information
+            in a scene, and by extension differences between the predicted and ground-truth enhanced versions of an
+            image. The value ranges from `-1` to `1`, where `1`
+            corresponds to identical images. SSIM extracts 3 key features from an image, namely luminance, contrast, and
+            structure and subsequently applies certain comparison
+            functions to these features to compare the given images, followed by a final combination function that
+            aggregates the final result.
         </p>
 
         <h4 class="mt-4">Quantitative Evaluation</h4>
         <p>
-            The results, in terms of the PSNR and SSIM evaluation metrics, calculated for our implementation of RCTNet are depicted in <a href="#tab1">Table 1</a>, along with results of competing image
-            enhancement methods and the official implementation of RCTNet, as reported in <a href="#1">Kim et al. (2021)</a>. It becomes evident that our results approximate those reported for the official
+            The results, in terms of the PSNR and SSIM evaluation metrics, calculated for our implementation of RCTNet
+            are depicted in <a href="#tab1">Table 1</a>, along with results of competing image
+            enhancement methods and the official implementation of RCTNet, as reported in <a href="#1">Kim et al.
+                (2021)</a>. It becomes evident that our results approximate those reported for the official
             implementation for both examined metrics.
         </p>
 
         <div class="center d-flex justify-content-around">
             <div>
-            <table id="tab1"  style="width: 70%; margin-left: auto; margin-right: auto;" class="table table-border text-center">
-                <caption class="figure-caption text-center">Table 1: Quantitative comparison on the LoL dataset [<a href="#16">Wang et al. (2004)</a>].
-                    The best results are boldfaced and the second best ones are
-                    underlined. Our results correspond to the mean value of 100 random seed executions (*).
+                <table id="tab1" style="width: 75%; margin-left: auto; margin-right: auto;"
+                    class="table table-border text-center">
+                    <caption class="figure-caption text-center" width="100%">Table 1: Quantitative comparison on the LoL
+                        dataset [<a href="#16">Wang et al. (2004)</a>].
+                        The best results are boldfaced and the second best ones are
+                        underlined. Our results correspond to the mean value of 100 random seed executions (*).
                     </caption>
-                <thead>
-                <tr>
-                    <th>Method</th>
-                    <th>PSNR</th>
-                    <th>SSIM</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td>NPE [<a href="#17">Wang et al. (2013)</a>]</td><td>16.97</td><td>0.589</td></tr>
-                <tr>
-                    <td>LIME [<a href="#18">Guo et al. (2016)</a>]</td><td>15.24</td><td>0.470</td></tr>
-                <tr>
-                    <td>SRIE [<a href="#19">Fu et al. (2016)</a>]</td><td>17.34<td>0.686</td></tr>
-                <tr>
-                    <td>RRM [<a href="#20">Li et al. (2016)</a>]</td><td>17.34</td><td>0.686</td></tr>
-                <tr>
-                    <td>SICE [<a href="#21">Cai et al. (2018)</a>]</td><td>19.40</td><td>0.690</td></tr>
-                <tr>
-                    <td>DRD [<a href="#15">Wei et al. (2018)</a>]</td><td>16.77</td><td>0.559</td></tr>
-                <tr>
-                    <td>KinD [<a href="#22">Zhang et al. (2019)</a>]</td><td>20.87</td><td>0.802</td></tr>
-                <tr>
-                    <td>DRBN [<a href="#4">Yang et al. (2020)</a>]</td><td>20.13</td><td><b>0.830</b></td></tr>
-                <tr>
-                    <td>ZeroDCE [<a href="#11">Guo et al. (2020)</a>]</td><td>14.86</td><td>0.559</td></tr>
-                <tr>
-                    <td>EnlightenGAN [<a href="#23">Jiang et al. (2021)</a>]</td><td>15.34</td><td>0.528</td></tr>
-                <tr>
-                    <td>RCTNet [<a href="#1">Kim et al. (2021)</a>]</td><td><u>22.67</u></td><td>0.788</td></tr>
-                <tr>
-                    <td>RCTNet + BF [<a href="#1">Kim et al. (2021)</a>]</td><td><b>22.81</b></td><td><u>0.827</u></td></tr>
-                <tr>
-                    <td>RCTNet (ours)* </td><td>20.52</td><td>0.816</td></tr>
-                </tbody>
-            </table>
-        <p>
-            At this point we should mention that during the evaluation of our results, we noticed a high variance for both metrics caused by the random seed selection.
-            To account for this variance, we executed our evaluation for 100 randomly selected seeds. The reported results in <a href="#tab1">Table 1</a>, for our implementation,
-            correspond to the average values of these 100 executions. The mean, standard deviation, maximum, and minimum values for both evaluation metrics are shown in
-            <a href="#tab2">Table 2</a>. Additionally, in Figures <a href="#fig4">4.a</a> and <a href="#fig4">4.b</a>, the plotted density distributions for PSNR and SSIM, respectively, depict the observed high variance for both
-            metrics. Furthermore, some outliers can also be observed in both Figures, which could potentially provide spurious results regarding the model's performance,
-            in case the observed variance is not accounted for.
-        </p>
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>PSNR</th>
+                            <th>SSIM</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>NPE [<a href="#17">Wang et al. (2013)</a>]</td>
+                            <td>16.97</td>
+                            <td>0.589</td>
+                        </tr>
+                        <tr>
+                            <td>LIME [<a href="#18">Guo et al. (2016)</a>]</td>
+                            <td>15.24</td>
+                            <td>0.470</td>
+                        </tr>
+                        <tr>
+                            <td>SRIE [<a href="#19">Fu et al. (2016)</a>]</td>
+                            <td>17.34
+                            <td>0.686</td>
+                        </tr>
+                        <tr>
+                            <td>RRM [<a href="#20">Li et al. (2016)</a>]</td>
+                            <td>17.34</td>
+                            <td>0.686</td>
+                        </tr>
+                        <tr>
+                            <td>SICE [<a href="#21">Cai et al. (2018)</a>]</td>
+                            <td>19.40</td>
+                            <td>0.690</td>
+                        </tr>
+                        <tr>
+                            <td>DRD [<a href="#15">Wei et al. (2018)</a>]</td>
+                            <td>16.77</td>
+                            <td>0.559</td>
+                        </tr>
+                        <tr>
+                            <td>KinD [<a href="#22">Zhang et al. (2019)</a>]</td>
+                            <td>20.87</td>
+                            <td>0.802</td>
+                        </tr>
+                        <tr>
+                            <td>DRBN [<a href="#4">Yang et al. (2020)</a>]</td>
+                            <td>20.13</td>
+                            <td><b>0.830</b></td>
+                        </tr>
+                        <tr>
+                            <td>ZeroDCE [<a href="#11">Guo et al. (2020)</a>]</td>
+                            <td>14.86</td>
+                            <td>0.559</td>
+                        </tr>
+                        <tr>
+                            <td>EnlightenGAN [<a href="#23">Jiang et al. (2021)</a>]</td>
+                            <td>15.34</td>
+                            <td>0.528</td>
+                        </tr>
+                        <tr>
+                            <td>RCTNet [<a href="#1">Kim et al. (2021)</a>]</td>
+                            <td><u>22.67</u></td>
+                            <td>0.788</td>
+                        </tr>
+                        <tr>
+                            <td>RCTNet (ours)* </td>
+                            <td>20.52</td>
+                            <td>0.816</td>
+                        </tr>
+                        <tr>
+                            <td>RCTNet + BF [<a href="#1">Kim et al. (2021)</a>]</td>
+                            <td><b>22.81</b></td>
+                            <td><u>0.827</u></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>
+                    At this point we should mention that during the evaluation of our results, we noticed a high
+                    variance for both metrics caused by the random seed selection.
+                    To account for this variance, we executed our evaluation for 100 randomly selected seeds. The
+                    reported results in <a href="#tab1">Table 1</a>, for our implementation,
+                    correspond to the average values of these 100 executions. The mean, standard deviation, maximum, and
+                    minimum values for both evaluation metrics are shown in
+                    <a href="#tab2">Table 2</a>. Additionally, in Figures <a href="#fig4">4.a</a> and <a
+                        href="#fig4">4.b</a>, the plotted density distributions for PSNR and SSIM, respectively, depict
+                    the observed high variance for both
+                    metrics. Furthermore, some outliers can also be observed in both Figures, which could potentially
+                    provide spurious results regarding the model's performance,
+                    in case the observed variance is not accounted for.
+                </p>
 
-        <div class="center d-flex justify-content-around">
-            <div>
-            <table id="tab2"  style="width: 70%; margin-left: auto; margin-right: auto;" class="table table-border text-center">
-                <caption class="figure-caption text-center">Table 2: Mean, standard deviation, maximum, and minimum values for PSNR and SSIM, as measured after
-                    100 executions with different random seeds.
-                    </caption>
-                <thead>
-                <tr>
-                    <th>Evaluation Metric</th>
-                    <th>Mean</th>
-                    <th>Standard Deviation</th>
-                    <th>Max</th>
-                    <th>Min</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td>PSNR</td><td>20.522</td><td>0.594</td><td>22.003</td><td>18.973</td></tr>
-                <tr>
-                    <td>SSIM</td><td>0.816</td><td>0.009</td><td>0.839</td><td>0.787</td></tr>
-                </tbody>
-            </table>
+                <div class="center d-flex justify-content-around">
+                    <div>
+                        <table id="tab2" style="width: 70%; margin-left: auto; margin-right: auto;"
+                            class="table table-border text-center">
+                            <caption class="figure-caption text-center">Table 2: Mean, standard deviation, maximum, and
+                                minimum values for PSNR and SSIM, for 100 executions with different random seeds.
+                            </caption>
+                            <thead>
+                                <tr>
+                                    <th>Evaluation Metric</th>
+                                    <th>Mean</th>
+                                    <th>Standard Deviation</th>
+                                    <th>Max</th>
+                                    <th>Min</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>PSNR</td>
+                                    <td>20.522</td>
+                                    <td>0.594</td>
+                                    <td>22.003</td>
+                                    <td>18.973</td>
+                                </tr>
+                                <tr>
+                                    <td>SSIM</td>
+                                    <td>0.816</td>
+                                    <td>0.009</td>
+                                    <td>0.839</td>
+                                    <td>0.787</td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-        <figure id="fig4" class="text-center">
-            <img src="images/PSNR_distribution.png" width="60%" height="8%" style="margin-left: auto;margin-right: auto;"/>
-            <img src="images/SSIM_distribution.png" width="60%" height="8%" style="margin-left: auto;margin-right: auto;"/>
-            <figcaption class="figure-caption text-center">Figure 4:  Density distributions of the measured values for (a) PSNR and (b) SSIM after 100 executions with different random seeds.</a></figcaption>
-        </figure>
-
-
-        <h4 class="mt-4">Qualitative Evaluation</h4>
-        <p>
-            In <a href="#tab3">Table 3</a> some image enhancement results of the implemented RCTNet are shown, compared to the low-light input images and the
-            ground-truth normal-light output images. From these examples it becomes evident that RCTNet has successfully learned how to enhance low-light
-            images, achieving comparable results to the ground-truth images in terms of exposure and color-tones. Nevertheless, the produced images are slightly less saturated
-            with noise being more prominent. It was conjectured that by training the network for more epochs, some of these limitations could be alleviated. It is also observed that
-            RCTNet fails to extract certain representative colors that are only available in small regions of the input image (<i>e.g.</i> the green color for the `4^{th}` image).
-        </p>
-
-
-        <div class="center d-flex justify-content-around">
-            <div>
-            <table id="tab3"  style="width: 100%; margin-left: auto; margin-right: auto;" class="table table-border text-center">
-                <caption class="figure-caption text-center">Table 3:  Qualitative comparison on the LoL dataset for an RCTNet trained for 500 epochs.
-                    </caption>
-                <thead>
-                <tr>
-                    <th>Input</th>
-                    <th>RCTNet</th>
-                    <th>Ground-Truth</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td><img src="images/1_low.png" alt="" width="100%"/></td>
-                    <td><img src="images/1_prod.png" alt=""  width="100%"/></td>
-                    <td><img src="images/1_high.png" alt="" width="100%" /></td>
-                </tr>
-                <tr>
-                    <td><img src="images/2_low.png" alt=""   width="100%"/></td>
-                    <td><img src="images/2_prod.png" alt=""  width="100%" /></td>
-                    <td><img src="images/2_high.png" alt="" width="100%" /></td>
-                </tr>
-                <tr>
-                    <td><img src="images/3_low.png" alt="" width="100%"/></td>
-                    <td><img src="images/3_prod.png" alt=""  width="100%"/></td>
-                    <td><img src="images/3_high.png" alt="" width="100%" /></td>
-                </tr>
-                <tr>
-                    <td><img src="images/4_low.png" alt=""   width="100%"/></td>
-                    <td><img src="images/4_prod.png" alt=""   width="100%" /></td>
-                    <td><img src="images/4_high.png" alt="" width="100%" /></td>
-                </tr>
-                <tr>
-                    <td><img src="images/5_low.png" alt="" width="100%"/></td>
-                    <td><img src="images/5_prod.png" alt="" width="100%"/></td>
-                    <td><img src="images/5_high.png" alt="" width="100%" /></td>
-                </tr>
-                </tbody>
-            </table>
+                        <figure id="fig4" class="text-center">
+                            <!-- <img src="images/architecture.PNG" width="100%" style="cursor:zoom-in" alt="likelihoods"
+                                class="figure-img"
+                                onclick="document.getElementById('modal').style.display='block'; document.getElementById('modal-img').src='images/architecture.PNG';"> -->
+                            <img src="images/PSNR_distribution.png" width="80%" height="auto" class="figure-img"
+                                style="margin-left: auto;margin-right: auto;cursor:zoom-in;"
+                                alt="PSNR density distribution"
+                                onclick="document.getElementById('modal').style.display='block'; document.getElementById('modal-img').src='images/PSNR_distribution.png';" />
+                            <img src="images/SSIM_distribution.png" width="80%" height="auto"
+                                alt="SSIM density distribution"
+                                style="margin-left: auto;margin-right: auto;cursor:zoom-in;" clas="figure-img"
+                                onclick="document.getElementById('modal').style.display='block'; document.getElementById('modal-img').src='images/SSIM_distribution.png';" />
+                            <figcaption class="figure-caption text-center">Figure 4: Density distributions of the
+                                measured values for (a) PSNR and (b) SSIM after 100 executions with different random
+                                seeds.</a></figcaption>
+                        </figure>
 
 
+                        <h4 class="mt-4">Qualitative Evaluation</h4>
+                        <p>
+                            In <a href="#tab3">Table 3</a> some image enhancement results of the implemented RCTNet are
+                            shown, compared to the low-light input images and the
+                            ground-truth normal-light output images. From these examples it becomes evident that RCTNet
+                            has successfully learned how to enhance low-light
+                            images, achieving comparable results to the ground-truth images in terms of exposure and
+                            color-tones. Nevertheless, the produced images are slightly less saturated
+                            with noise being more prominent. It was conjectured that by training the network for more
+                            epochs, some of these limitations could be alleviated. It is also observed that
+                            RCTNet fails to extract certain representative colors that are only available in small
+                            regions of the input image (<i>e.g.</i> the green color for the `4^{th}` image).
+                        </p>
 
 
-        <!-- CONCLUSIONS -->
-        <h2 class="mt-4">Conclusions</h2>
-        <p>
-            In conclusion, our analysis showed comparable results to the ones presented in the original paper. The qualitative evaluation on the LOL dataset
-            facilitated our implementation's capability of learning to successfully enhance low-light images with color tones matching those of the ground-truth enhanced
-            image. The observed dissimilarity in terms of color saturation could possibly be accounted for by tuning certain hyperparameters of the model or training for more
-            epochs. Regarding our quantitative findings, the measured values for PSNR corresponding to our implementation were lower to the ones corresponding to the original
-            implementation, whereas for SSIM the opposite was true. Nevertheless, these discrepancies could be attributed to the high variance that was observed during the analysis,
-            especially when considering that <a href="#1">Kim et al. (2021)</a> make no reference of the random seed selection corresponding to their reported results.
-        </p>
+                        <div class="center d-flex justify-content-around">
+                            <div>
+                                <table id="tab3" style="width: 100%; margin-left: auto; margin-right: auto;"
+                                    class="table table-border text-center">
+                                    <caption class="figure-caption text-center">Table 3: Qualitative comparison on the
+                                        LoL dataset for an RCTNet trained for 500 epochs.
+                                    </caption>
+                                    <thead>
+                                        <tr>
+                                            <th>Input</th>
+                                            <th>RCTNet</th>
+                                            <th>Ground-Truth</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><img src="images/1_low.png" alt="" width="100%" /></td>
+                                            <td><img src="images/1_prod.png" alt="" width="100%" /></td>
+                                            <td><img src="images/1_high.png" alt="" width="100%" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td><img src="images/2_low.png" alt="" width="100%" /></td>
+                                            <td><img src="images/2_prod.png" alt="" width="100%" /></td>
+                                            <td><img src="images/2_high.png" alt="" width="100%" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td><img src="images/3_low.png" alt="" width="100%" /></td>
+                                            <td><img src="images/3_prod.png" alt="" width="100%" /></td>
+                                            <td><img src="images/3_high.png" alt="" width="100%" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td><img src="images/4_low.png" alt="" width="100%" /></td>
+                                            <td><img src="images/4_prod.png" alt="" width="100%" /></td>
+                                            <td><img src="images/4_high.png" alt="" width="100%" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td><img src="images/5_low.png" alt="" width="100%" /></td>
+                                            <td><img src="images/5_prod.png" alt="" width="100%" /></td>
+                                            <td><img src="images/5_high.png" alt="" width="100%" /></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
 
 
 
-        <!-- REFERENCES -->
-        <h2 class="mt-5">References</h2>
-        <p id="1">[1] Kim, H., Choi, S. M., Kim, C. S., & Koh, Y. J. (2021). Representative Color Transform for Image Enhancement. In Proceedings of the IEEE/CVF International Conference on Computer Vision (pp. 4459-4468).</p>
-        <p id="2">[2] Chen, Y. S., Wang, Y. C., Kao, M. H., & Chuang, Y. Y. (2018). Deep photo enhancer: Unpaired learning for image enhancement from photographs with gans. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (pp. 6306-6314).</p>
-        <p id="3">[3] Yan, Z., Zhang, H., Wang, B., Paris, S., & Yu, Y. (2016). Automatic photo adjustment using deep neural networks. ACM Transactions on Graphics (TOG), 35(2), 1-15.</p>
-        <p id="4">[4] Yang, W., Wang, S., Fang, Y., Wang, Y., & Liu, J. (2020). From fidelity to perceptual quality: A semi-supervised approach for low-light image enhancement. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition (pp. 3063-3072)</p>
-        <p id="5">[5] Kim, H. U., Koh, Y. J., & Kim, C. S. (2020, August). PieNet: Personalized image enhancement network. In European Conference on Computer Vision (pp. 374-390). Springer, Cham.</p>
-        <p id="6">[6] Deng, Y., Loy, C. C., & Tang, X. (2018, October). Aesthetic-driven image enhancement by adversarial learning. In Proceedings of the 26th ACM international conference on Multimedia (pp. 870-878).</p>
-        <p id="7">[7] Kim, H. U., Koh, Y. J., & Kim, C. S. (2020, August). Global and local enhancement networks for paired and unpaired image enhancement. In European Conference on Computer Vision (pp. 339-354). Springer, Cham.</p>
-        <p id="8">[8] Park, J., Lee, J. Y., Yoo, D., & Kweon, I. S. (2018). Distort-and-recover: Color enhancement using deep reinforcement learning. In Proceedings of the IEEE conference on computer vision and pattern recognition (pp. 5928-5936).</p>
-        <p id="9">[9] Hu, Y., He, H., Xu, C., Wang, B., & Lin, S. (2018). Exposure: A white-box photo post-processing framework. ACM Transactions on Graphics (TOG), 37(2), 1-17.</p>
-        <p id="10">[10] Kosugi, S., & Yamasaki, T. (2020, April). Unpaired image enhancement featuring reinforcement-learning-controlled image editing software. In Proceedings of the AAAI Conference on Artificial Intelligence (Vol. 34, No. 07, pp. 11296-11303).</p>
-        <p id="11">[11] Guo, C., Li, C., Guo, J., Loy, C. C., Hou, J., Kwong, S., & Cong, R. (2020). Zero-reference deep curve estimation for low-light image enhancement. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (pp. 1780-1789).</p>
-        <p id="12">[12] Tan, M., Pang, R., & Le, Q. V. (2020). Efficientdet: Scalable and efficient object detection. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition (pp. 10781-10790).</p>
-        <p id="13">[13] Simonyan, K., & Zisserman, A. (2014). Very deep convolutional networks for large-scale image recognition. arXiv preprint arXiv:1409.1556.</p>
-        <p id="14">[14] Russakovsky, O., Deng, J., Su, H., Krause, J., Satheesh, S., Ma, S., ... & Fei-Fei, L. (2015). Imagenet large scale visual recognition challenge. International journal of computer vision, 115(3), 211-252.</p>
-        <p id="15">[15] Wei, C., Wang, W., Yang, W., & Liu, J. (2018). Deep retinex decomposition for low-light enhancement. arXiv preprint arXiv:1808.04560.</p>
-        <p id="16">[16] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004). Image quality assessment: from error visibility to structural similarity. IEEE transactions on image processing, 13(4), 600-612.</p>
-        <p id="17">[17] Wang, S., Zheng, J., Hu, H. M., & Li, B. (2013). Naturalness preserved enhancement algorithm for non-uniform illumination images. IEEE transactions on image processing, 22(9), 3538-3548.</p>
-        <p id="18">[18] Guo, X., Li, Y., & Ling, H. (2016). LIME: Low-light image enhancement via illumination map estimation. IEEE Transactions on image processing, 26(2), 982-993.</p>
-        <p id="19">[19] Fu, X., Zeng, D., Huang, Y., Zhang, X. P., & Ding, X. (2016). A weighted variational model for simultaneous reflectance and illumination estimation. In Proceedings of the IEEE conference on computer vision and pattern recognition (pp. 2782-2790).</p>
-        <p id="20">[20] Li, C. Y., Guo, J. C., Cong, R. M., Pang, Y. W., & Wang, B. (2016). Underwater image enhancement by dehazing with minimum information loss and histogram distribution prior. IEEE Transactions on Image Processing, 25(12), 5664-5677.</p>
-        <p id="21">[21] Cai, J., Gu, S., & Zhang, L. (2018). Learning a deep single image contrast enhancer from multi-exposure images. IEEE Transactions on Image Processing, 27(4), 2049-2062.</p>
-        <p id="22">[22] Zhang, Y., Zhang, J., & Guo, X. (2019, October). Kindling the darkness: A practical low-light image enhancer. In Proceedings of the 27th ACM international conference on multimedia (pp. 1632-1640).</p>
-        <p id="23">[23] Jiang, Y., Gong, X., Liu, D., Cheng, Y., Fang, C., Shen, X., ... & Wang, Z. (2021). Enlightengan: Deep light enhancement without paired supervision. IEEE Transactions on Image Processing, 30, 2340-2349.</p>
+
+                                <!-- CONCLUSIONS -->
+                                <h2 class="mt-4">Conclusions</h2>
+                                <p>
+                                    In conclusion, our analysis showed comparable results to the ones presented in the
+                                    original paper. The qualitative evaluation on the LOL dataset
+                                    facilitated our implementation's capability of learning to successfully enhance
+                                    low-light images with color tones matching those of the ground-truth enhanced
+                                    image. The observed dissimilarity in terms of color saturation could possibly be
+                                    accounted for by tuning certain hyperparameters of the model or training for more
+                                    epochs. Regarding our quantitative findings, the measured values for PSNR
+                                    corresponding to our implementation were lower to the ones corresponding to the
+                                    original
+                                    implementation, whereas for SSIM the opposite was true. Nevertheless, these
+                                    discrepancies could be attributed to the high variance that was observed during the
+                                    analysis,
+                                    especially when considering that <a href="#1">Kim et al. (2021)</a> make no
+                                    reference of the random seed selection corresponding to their reported results.
+                                </p>
+
+                                <div id="modal" class="w3-modal" onclick="this.style.display='none'">
+                                    <span class="w3-button w3-hover-red w3-xlarge w3-display-topright">&times;</span>
+                                    <div class="w3-modal-content w3-animate-zoom">
+                                        <img id="modal-img" src="" style="width:100%">
+                                    </div>
+                                </div>
+
+
+                                <!-- REFERENCES -->
+                                <h2 class="mt-5">References</h2>
+                                <p id="1">[1] Kim, H., Choi, S. M., Kim, C. S., & Koh, Y. J. (2021). Representative
+                                    Color Transform for Image Enhancement. In Proceedings of the IEEE/CVF International
+                                    Conference on Computer Vision (pp. 4459-4468).</p>
+                                <p id="2">[2] Chen, Y. S., Wang, Y. C., Kao, M. H., & Chuang, Y. Y. (2018). Deep photo
+                                    enhancer: Unpaired learning for image enhancement from photographs with gans. In
+                                    Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (pp.
+                                    6306-6314).</p>
+                                <p id="3">[3] Yan, Z., Zhang, H., Wang, B., Paris, S., & Yu, Y. (2016). Automatic photo
+                                    adjustment using deep neural networks. ACM Transactions on Graphics (TOG), 35(2),
+                                    1-15.</p>
+                                <p id="4">[4] Yang, W., Wang, S., Fang, Y., Wang, Y., & Liu, J. (2020). From fidelity to
+                                    perceptual quality: A semi-supervised approach for low-light image enhancement. In
+                                    Proceedings of the IEEE/CVF conference on computer vision and pattern recognition
+                                    (pp. 3063-3072)</p>
+                                <p id="5">[5] Kim, H. U., Koh, Y. J., & Kim, C. S. (2020, August). PieNet: Personalized
+                                    image enhancement network. In European Conference on Computer Vision (pp. 374-390).
+                                    Springer, Cham.</p>
+                                <p id="6">[6] Deng, Y., Loy, C. C., & Tang, X. (2018, October). Aesthetic-driven image
+                                    enhancement by adversarial learning. In Proceedings of the 26th ACM international
+                                    conference on Multimedia (pp. 870-878).</p>
+                                <p id="7">[7] Kim, H. U., Koh, Y. J., & Kim, C. S. (2020, August). Global and local
+                                    enhancement networks for paired and unpaired image enhancement. In European
+                                    Conference on Computer Vision (pp. 339-354). Springer, Cham.</p>
+                                <p id="8">[8] Park, J., Lee, J. Y., Yoo, D., & Kweon, I. S. (2018). Distort-and-recover:
+                                    Color enhancement using deep reinforcement learning. In Proceedings of the IEEE
+                                    conference on computer vision and pattern recognition (pp. 5928-5936).</p>
+                                <p id="9">[9] Hu, Y., He, H., Xu, C., Wang, B., & Lin, S. (2018). Exposure: A white-box
+                                    photo post-processing framework. ACM Transactions on Graphics (TOG), 37(2), 1-17.
+                                </p>
+                                <p id="10">[10] Kosugi, S., & Yamasaki, T. (2020, April). Unpaired image enhancement
+                                    featuring reinforcement-learning-controlled image editing software. In Proceedings
+                                    of the AAAI Conference on Artificial Intelligence (Vol. 34, No. 07, pp.
+                                    11296-11303).</p>
+                                <p id="11">[11] Guo, C., Li, C., Guo, J., Loy, C. C., Hou, J., Kwong, S., & Cong, R.
+                                    (2020). Zero-reference deep curve estimation for low-light image enhancement. In
+                                    Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition
+                                    (pp. 1780-1789).</p>
+                                <p id="12">[12] Tan, M., Pang, R., & Le, Q. V. (2020). Efficientdet: Scalable and
+                                    efficient object detection. In Proceedings of the IEEE/CVF conference on computer
+                                    vision and pattern recognition (pp. 10781-10790).</p>
+                                <p id="13">[13] Simonyan, K., & Zisserman, A. (2014). Very deep convolutional networks
+                                    for large-scale image recognition. arXiv preprint arXiv:1409.1556.</p>
+                                <p id="14">[14] Russakovsky, O., Deng, J., Su, H., Krause, J., Satheesh, S., Ma, S., ...
+                                    & Fei-Fei, L. (2015). Imagenet large scale visual recognition challenge.
+                                    International journal of computer vision, 115(3), 211-252.</p>
+                                <p id="15">[15] Wei, C., Wang, W., Yang, W., & Liu, J. (2018). Deep retinex
+                                    decomposition for low-light enhancement. arXiv preprint arXiv:1808.04560.</p>
+                                <p id="16">[16] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004). Image
+                                    quality assessment: from error visibility to structural similarity. IEEE
+                                    transactions on image processing, 13(4), 600-612.</p>
+                                <p id="17">[17] Wang, S., Zheng, J., Hu, H. M., & Li, B. (2013). Naturalness preserved
+                                    enhancement algorithm for non-uniform illumination images. IEEE transactions on
+                                    image processing, 22(9), 3538-3548.</p>
+                                <p id="18">[18] Guo, X., Li, Y., & Ling, H. (2016). LIME: Low-light image enhancement
+                                    via illumination map estimation. IEEE Transactions on image processing, 26(2),
+                                    982-993.</p>
+                                <p id="19">[19] Fu, X., Zeng, D., Huang, Y., Zhang, X. P., & Ding, X. (2016). A weighted
+                                    variational model for simultaneous reflectance and illumination estimation. In
+                                    Proceedings of the IEEE conference on computer vision and pattern recognition (pp.
+                                    2782-2790).</p>
+                                <p id="20">[20] Li, C. Y., Guo, J. C., Cong, R. M., Pang, Y. W., & Wang, B. (2016).
+                                    Underwater image enhancement by dehazing with minimum information loss and histogram
+                                    distribution prior. IEEE Transactions on Image Processing, 25(12), 5664-5677.</p>
+                                <p id="21">[21] Cai, J., Gu, S., & Zhang, L. (2018). Learning a deep single image
+                                    contrast enhancer from multi-exposure images. IEEE Transactions on Image Processing,
+                                    27(4), 2049-2062.</p>
+                                <p id="22">[22] Zhang, Y., Zhang, J., & Guo, X. (2019, October). Kindling the darkness:
+                                    A practical low-light image enhancer. In Proceedings of the 27th ACM international
+                                    conference on multimedia (pp. 1632-1640).</p>
+                                <p id="23">[23] Jiang, Y., Gong, X., Liu, D., Cheng, Y., Fang, C., Shen, X., ... & Wang,
+                                    Z. (2021). Enlightengan: Deep light enhancement without paired supervision. IEEE
+                                    Transactions on Image Processing, 30, 2340-2349.</p>
     </section>
 
 
