@@ -17,7 +17,7 @@
             
 <figure id="fig1">
     <img src="images/architecture.PNG" width="100%" alt="RCTNet architecture">
-    <p align="center">Figure 2: An overview of RCTNet's architecture.</p>
+    <p align="center">Figure 1: An overview of RCTNet's architecture.</p>
 </figure>
 
 <h2> Experiments </h2>
