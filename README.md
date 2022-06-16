@@ -214,7 +214,7 @@
   <h3>Evaluation</h3>
         <ol type = "1">
   <li>Download the official LoL dataset from <a href="https://daooshee.github.io/BMVC2018website/">here</a>.</li>
-  <li>Download the weights for our pre-trained model from <a href="">here</a>.</li>
+  <li>Download the weights for our pre-trained model from <a href="https://drive.google.com/file/d/1NYQrYkOfQWndkS03-sAgEmq23Pi2lWQf/view?usp=sharing">here</a>.</li>
   <li>Use the <a href="eval.py">eval.py</a> script.</li>
       </ol>
       
@@ -241,7 +241,7 @@ options:
 
 <h3> Enhance images </h3>
         <ol type = "1">
-  <li>Download the weights for our pre-trained model from <a href="">here</a>.</li>
+  <li>Download the weights for our pre-trained model from <a href="https://drive.google.com/file/d/1NYQrYkOfQWndkS03-sAgEmq23Pi2lWQf/view?usp=sharing">here</a>.</li>
   <li>Use the <a href="enhance.py">enhance.py</a> script.</li>
       </ol>
       
