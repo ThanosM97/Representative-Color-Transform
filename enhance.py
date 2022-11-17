@@ -73,6 +73,8 @@ def main(args):
     model.load_state_dict(torch.load(
         args.checkpoint, map_location=torch.device(device)))
 
+    model.eval()
+
     # Transform to convert torch.Tensor to PILImage
     transform = T.ToPILImage()
 
@@ -89,13 +91,14 @@ def main(args):
             exit()
 
     if path.is_dir():
-        # Initialize dataloader
+        # Initialize dataloaders
         dataset = EnhanceDataset(path)
         dataloader = DataLoader(
             dataset, batch_size=args.batch_size)
 
         for batch, x in enumerate(dataloader):
-            y = torch.clamp(model(x), max=255.0)
+            with torch.no_grad():
+                y = torch.clamp(model(x), max=255.0)
 
             for i, enhanced_img in enumerate(y):
                 enhanced_img = transform(enhanced_img / 255.0)

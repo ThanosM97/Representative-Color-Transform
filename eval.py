@@ -102,6 +102,8 @@ def main(args):
         model.load_state_dict(torch.load(
             args.checkpoint, map_location=torch.device(device)))
 
+    model.eval()
+
     max_psnr = 0
     max_seed = 0
     random_seeds = random.sample(range(0, 1000), args.nseeds)
@@ -115,7 +117,9 @@ def main(args):
             ssim_scores = []
             for x, target in dataloader:
 
-                y = torch.clamp(model(x), max=255.0)
+                with torch.no_grad():
+                    y = torch.clamp(model(x), max=255.0)
+
                 target = torch.clamp(target, max=255.0)
 
                 for img_true, img_test in zip(target, y):
