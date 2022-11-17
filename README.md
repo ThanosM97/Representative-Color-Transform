@@ -94,8 +94,8 @@
                         </tr>
                         <tr>
                             <td>RCTNet (ours)* </td>
-                            <td>18.81</td>
-                            <td>0.732</td>
+                            <td>19.96</td>
+                            <td>0.76</td>
                         </tr>
                         <tr>
                             <td>RCTNet + BF [<a href="#1">Kim et al. (2021)</a>]</td>
